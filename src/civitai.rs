@@ -74,21 +74,21 @@ pub async fn update_model_info(config: Config) -> anyhow::Result<()> {
 }
 
 pub async fn get_model_info(
-    path: &PathBuf,
+    path: &Path,
     client: &Client,
     headers: &HeaderMap,
     blake3: Option<String>,
     config: &CivitaiConfig,
 ) -> anyhow::Result<()> {
     let info;
-    let mut json_path = path.clone();
+    let mut json_path = PathBuf::from(path);
     json_path.set_extension("json");
 
     if !json_path.exists() || config.overwrite_json {
-        let hash = blake3.unwrap_or(calculate_blake3_hash(&path)?);
+        let hash = blake3.unwrap_or(calculate_blake3_hash(path)?);
         let url = format!("https://civitai.com/api/v1/model-versions/by-hash/{hash}");
         info = client.get(url).headers(headers.clone()).send().await?.json().await?;
-        save_info(path, &info).await?;
+        save_info(&json_path, &info).await?;
     } else {
         info!("File already exists: {}", json_path.display());
         info = serde_json::from_reader(File::open(&json_path)?)?;
@@ -149,7 +149,10 @@ async fn download_preview(
     Ok(())
 }
 
-async fn save_info(info_file: &PathBuf, info: &Value) -> anyhow::Result<()> {
+async fn save_info(info_file: &Path, info: &Value) -> anyhow::Result<()> {
+    if !info_file.extension().unwrap_or_default().eq("json") {
+        return Err(anyhow::anyhow!("Invalid json extension. Do you save to wrong file?"));
+    }
     let mut saved_file = File::create(info_file)?;
     let info_str = to_string_pretty(info)?;
     saved_file
@@ -159,7 +162,7 @@ async fn save_info(info_file: &PathBuf, info: &Value) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn calculate_blake3_hash(file_path: &PathBuf) -> std::io::Result<String> {
+fn calculate_blake3_hash(file_path: &Path) -> std::io::Result<String> {
     let file = File::open(file_path)?;
     let mut reader = BufReader::new(file);
     let mut hasher = blake3::Hasher::new();

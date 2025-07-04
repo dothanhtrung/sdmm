@@ -36,9 +36,7 @@ pub async fn add_tag(pool: &SqlitePool, name: &str) -> anyhow::Result<()> {
 }
 
 pub async fn delete(pool: &SqlitePool, id: i64) -> anyhow::Result<()> {
-    sqlx::query!("DELETE FROM tag WHERE id = ?", id)
-        .execute(pool)
-        .await?;
+    sqlx::query!("DELETE FROM tag WHERE id = ?", id).execute(pool).await?;
     Ok(())
 }
 
@@ -88,6 +86,10 @@ pub async fn add_tag_item(pool: &SqlitePool, item: i64, tags: &Vec<String>) -> R
     let mut depend_tags = HashSet::new();
 
     for tag in tags {
+        if tag.is_empty() {
+            continue;
+        }
+
         let tag_id = match sqlx::query_scalar!("SELECT id FROM tag WHERE name = ?", tag)
             .fetch_one(pool)
             .await

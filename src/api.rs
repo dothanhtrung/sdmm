@@ -5,24 +5,21 @@ use crate::civitai::{
     PREVIEW_EXT,
 };
 use crate::config::Config;
-use crate::db::item::{insert_or_update, Item};
+use crate::db::item::insert_or_update;
 use crate::db::tag::{add_tag_from_model_info, update_item_note, update_tag_item, Tag, TagCount};
 use crate::db::{item, tag, DBPool};
 use crate::{civitai, ConfigData, BASE_PATH_PREFIX};
 use actix_web::web::Data;
 use actix_web::{get, post, rt, web, Responder};
-use actix_web_lab::__reexports::futures_util::StreamExt;
 use actix_web_lab::extract::Query;
 use jwalk::{Parallelism, WalkDir};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::types::Json;
-use sqlx::Error;
 use std::cmp::max;
 use std::collections::HashSet;
-use std::fs::File;
+
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tracing::{error, info};
@@ -304,7 +301,8 @@ async fn civitai_download(config_data: Data<ConfigData>, params: Query<CivitaiDo
             error!("Failed to download file: {}", e);
         }
 
-        if let Err(e) = civitai::get_model_info(&path, &client, &headers, params.blake3.as_str(), &config.civitai).await
+        if let Err(e) =
+            civitai::get_model_info(&path, &client, &headers, Some(params.blake3.clone()), &config.civitai).await
         {
             error!("Failed to get model info: {}", e);
         }

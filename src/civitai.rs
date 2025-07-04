@@ -1,22 +1,19 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
 use crate::config::{CivitaiConfig, Config};
-use actix_web::web;
 use actix_web_lab::__reexports::futures_util::StreamExt;
 use jwalk::{Parallelism, WalkDir};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{to_string_pretty, Value};
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
-use std::fmt::Display;
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tokio::fs;
-use tracing::{error, info};
+use tracing::info;
 
 pub const PREVIEW_EXT: &str = "jpeg";
 
@@ -66,8 +63,9 @@ pub async fn update_model_info(config: Config) -> anyhow::Result<()> {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
                     info!("Update model info: {}", entry.path().display());
-                    let hash = calculate_blake3_hash(&path)?;
-                    get_model_info(&path, &client, &headers, hash.as_str(), &config.civitai).await?;
+                    if let Err(e) = get_model_info(&path, &client, &headers, None, &config.civitai).await {
+                        info!("Error: {}", e);
+                    }
                 }
             }
         }
@@ -79,19 +77,24 @@ pub async fn get_model_info(
     path: &PathBuf,
     client: &Client,
     headers: &HeaderMap,
-    hash: &str,
+    blake3: Option<String>,
     config: &CivitaiConfig,
 ) -> anyhow::Result<()> {
-    let url = format!("https://civitai.com/api/v1/model-versions/by-hash/{hash}");
+    let info;
+    let mut json_path = path.clone();
+    json_path.set_extension("json");
 
-    match client.get(url).headers(headers.clone()).send().await?.json().await {
-        Ok(info) => {
-            if let Err(e) = save_info(&path, &info, config, &client, &headers).await {
-                error!("Failed to save model info: {}", e);
-            }
-        }
-        Err(e) => error!("Failed to download model info: {}", e),
+    if !json_path.exists() || config.overwrite_json {
+        let hash = blake3.unwrap_or(calculate_blake3_hash(&path)?);
+        let url = format!("https://civitai.com/api/v1/model-versions/by-hash/{hash}");
+        info = client.get(url).headers(headers.clone()).send().await?.json().await?;
+        save_info(path, &info).await?;
+    } else {
+        info!("File already exists: {}", json_path.display());
+        info = serde_json::from_reader(File::open(&json_path)?)?;
     }
+
+    download_preview(client, headers, config, &info, path).await?;
 
     Ok(())
 }
@@ -108,36 +111,23 @@ pub async fn download_file(url: &str, path: &Path, client: &Client, headers: &He
     Ok(())
 }
 
-async fn save_info(
-    filepath: &PathBuf,
-    mode_info: &Value,
-    config: &CivitaiConfig,
+async fn download_preview(
     client: &Client,
     headers: &HeaderMap,
+    config: &CivitaiConfig,
+    info: &Value,
+    model_path: &Path,
 ) -> anyhow::Result<()> {
-    let mut info_file = filepath.clone();
-    info_file.set_extension("json");
-
-    if let Some(images) = mode_info["images"].as_array() {
+    if let Some(images) = info["images"].as_array() {
         if let Some(first_image) = images.first() {
             if let Some(url) = first_image["url"].as_str() {
                 let extension = get_extension_from_url(url).unwrap_or(PREVIEW_EXT.to_string());
-
-                let mut preview_file = filepath.clone();
+                let mut preview_file = PathBuf::from(model_path);
                 preview_file.set_extension(extension);
-
-                if config.save_json {
-                    let mut saved_file = File::create(info_file)?;
-                    let info_str = to_string_pretty(mode_info)?;
-                    saved_file
-                        .write_all(info_str.as_bytes())
-                        .map_err(|e| anyhow::anyhow!(e))?;
-                }
 
                 let image_path = Path::new(&preview_file);
                 if image_path.exists() && !config.overwrite_thumbnail {
                     info!("File already exists: {}", image_path.display());
-                    return Ok(());
                 } else {
                     download_file(url, image_path, client, headers).await?;
                 }
@@ -156,6 +146,15 @@ async fn save_info(
             }
         }
     }
+    Ok(())
+}
+
+async fn save_info(info_file: &PathBuf, info: &Value) -> anyhow::Result<()> {
+    let mut saved_file = File::create(info_file)?;
+    let info_str = to_string_pretty(info)?;
+    saved_file
+        .write_all(info_str.as_bytes())
+        .map_err(|e| anyhow::anyhow!(e))?;
 
     Ok(())
 }
@@ -178,9 +177,9 @@ fn calculate_blake3_hash(file_path: &PathBuf) -> std::io::Result<String> {
     Ok(result.to_hex().to_string())
 }
 
-fn generate_video_thumbnail(file_path: &PathBuf, overwrite: bool) -> anyhow::Result<()> {
-    let mut thumbnail_path = file_path.clone();
-    thumbnail_path.set_extension("jpeg");
+fn generate_video_thumbnail(file_path: &Path, overwrite: bool) -> anyhow::Result<()> {
+    let mut thumbnail_path = PathBuf::from(file_path);
+    thumbnail_path.set_extension(PREVIEW_EXT);
     if !overwrite && thumbnail_path.exists() {
         return Ok(());
     }

@@ -62,7 +62,7 @@ impl Default for APIConfig {
 pub struct CivitaiConfig {
     pub api_key: String,
     pub overwrite_thumbnail: bool,
-    pub save_json: bool,
+    pub overwrite_json: bool,
     pub saved_location: HashMap<String, String>,
 }
 
@@ -71,7 +71,7 @@ impl Default for CivitaiConfig {
         Self {
             api_key: "your_civitai_api_key".to_string(),
             overwrite_thumbnail: false,
-            save_json: true,
+            overwrite_json: true,
             saved_location: HashMap::new(),
         }
     }

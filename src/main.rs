@@ -24,22 +24,22 @@ mod config;
 mod db;
 mod ui;
 
-use crate::api::{get, scan_folder};
+use crate::api::scan_folder;
 use crate::civitai::update_model_info;
 use crate::config::Config;
 use crate::db::DBPool;
 use actix_cors::Cors;
 use actix_files::Files;
 use actix_web::web::Data;
-use actix_web::{middleware, web, App, HttpServer, Scope};
+use actix_web::{middleware, web, App, HttpServer};
+use anyhow::anyhow;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use tera::Tera;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 use tracing_subscriber::EnvFilter;
 
 const BASE_PATH_PREFIX: &str = "base_";
@@ -87,11 +87,10 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Load config file
-    let config = Config::load(&args.config).unwrap_or_else(|e| {
-        warn!("Failed to load config file {}: {}", &args.config.display(), e);
-        warn!("Use default config");
-        Config::default()
-    });
+    let config = match Config::load(&args.config) {
+        Ok(c) => c,
+        Err(e) => return Err(anyhow!("Failed to load config file {}: {}", &args.config.display(), e)),
+    };
 
     if args.update_model_info {
         update_model_info(config.clone()).await?;

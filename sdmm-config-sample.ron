@@ -1,0 +1,30 @@
+(
+    db: (
+        init_timeout_secs: 5,
+        sqlite: (
+            db_path: "sd-models-manager.sqlite",
+        ),
+    ),
+    model_paths: {
+        "collection1": "/workspace/models",
+    },
+    civitai: (
+        api_key: "your_civitai_api_key",
+        overwrite_thumbnail: false,
+        save_json: true,
+        saved_location: {},
+    ),
+    listen_addr: "0.0.0.0",
+    listen_port: 9696,
+    api: (
+        per_page: 20,
+    ),
+    walkdir_parallel: 8,
+    extensions: [
+        "safetensors",
+        "ckpt",
+        "gguf",
+        "pt",
+        "pth",
+    ],
+)

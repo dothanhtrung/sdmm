@@ -1,0 +1,163 @@
+{% include "partial/header.html" %}
+{% include "partial/search.html" %}
+{% include "partial/sync_reload.html" %}
+
+
+<div class="flex flex-col md:flex-row">
+
+    <!-- Main content section -->
+    <div id="main-content" class="px-4 py-6 order-1 md:order-2">
+        {% include "partial/loading.html" %}
+
+        <div class="flex justify-start items-center my-4">
+            <div id="paginationTop" class="inline-flex flex-wrap items-center gap-1"></div>
+        </div>
+
+        <div id="grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+
+        </div>
+
+        <div class="flex justify-start items-center my-4">
+            <div id="paginationBottom" class="inline-flex flex-wrap items-center gap-1"></div>
+        </div>
+
+    </div>
+
+    {% include "partial/tagbar.html" %}
+
+</div>
+
+<script>
+    const grid = document.getElementById("grid");
+
+    function renderPagination(currentPage, totalItems, count) {
+        const totalPages = Math.max(1, Math.ceil(totalItems / count));
+        const top = document.getElementById("paginationTop");
+        const bottom = document.getElementById("paginationBottom");
+        top.innerHTML = bottom.innerHTML = "";
+
+        const makeBtn = (label, page, disabled = false, isActive = false) => {
+            // Clone current URL params
+            const newParams = new URLSearchParams(window.location.search);
+            newParams.set("page", page); // update page number
+
+            const btn = document.createElement("a");
+            btn.textContent = label;
+            btn.href = `/?${newParams.toString()}`;
+            btn.className =
+                "px-3 py-1 mx-1 rounded text-sm " +
+                (disabled
+                    ? "bg-gray-300 text-gray-500 pointer-events-none"
+                    : isActive
+                        ? "bg-gray-800 text-white font-bold"
+                        : "bg-blue-600 text-white hover:bg-blue-700 transition");
+            return btn;
+        };
+
+        const createPagination = (container) => {
+            container.appendChild(makeBtn("First", 1, currentPage === 1));
+            container.appendChild(makeBtn("Prev", Math.max(1, currentPage - 1), currentPage === 1));
+
+            const range = 3; // how many pages before/after current
+            const start = Math.max(1, currentPage - range);
+            const end = Math.min(totalPages, currentPage + range);
+
+            if (start > 2) {
+                const dots = document.createElement("span");
+                dots.textContent = "...";
+                dots.className = "text-gray-500 px-1";
+                container.appendChild(dots);
+            }
+
+            for (let i = start; i <= end; i++) {
+                container.appendChild(makeBtn(i, i, false, i === currentPage));
+            }
+
+            if (end < totalPages - 1) {
+                const dots = document.createElement("span");
+                dots.textContent = "...";
+                dots.className = "text-gray-500 px-1";
+                container.appendChild(dots);
+            }
+
+            container.appendChild(makeBtn("Next", Math.min(totalPages, currentPage + 1), currentPage === totalPages));
+            container.appendChild(makeBtn("Last", totalPages, currentPage === totalPages));
+        };
+
+        createPagination(top);
+        createPagination(bottom);
+    }
+
+    async function refreshContent() {
+        showLoading(true);
+
+        try {
+            const res = await fetch(getApiUrl());
+            const data = await res.json();
+
+            showLoading(false);
+            grid.innerHTML = "";
+
+            display_tag(data.tags);
+
+            data.items.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "relative bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-md";
+                card.innerHTML = `
+                    <a href="/item/${item.id}">
+                        <img src="${item.preview}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">
+                    </a>
+                    <div class="p-4 flex flex-row gap-2">
+                        <h2 class="text-lg font-semibold truncate">
+                            <a href="/item/${item.id}">${item.name}</a>
+                        </h2>
+
+                        <button
+                            onclick="handleDelete(${item.id})"
+                            class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            const params = new URLSearchParams(window.location.search);
+            const page = parseInt(params.get("page") || "1");
+            const count = parseInt(params.get("count") || "20");
+
+            renderPagination(page, data.total, count);
+
+        } catch (err) {
+            grid.innerHTML = `<p class="text-red-400 text-center py-10">Failed to load items: ${err.message}</p>`;
+        }
+
+    }
+
+    // Initial load
+    refreshContent();
+</script>
+
+
+<script>
+    function handleDelete(id) {
+        if (!confirm('Are you sure want to move this item to trash?')) return;
+
+        fetch(`/api/delete?id=${id}`)
+            .then(res => {
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    alert("Failed to delete the item.");
+                }
+            })
+            .catch(err => {
+                console.error("Delete failed:", err);
+                alert("Error while deleting.");
+            });
+    }
+</script>
+
+</body>
+</html>

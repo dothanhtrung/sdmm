@@ -1,0 +1,93 @@
+{% include "partial/header.html" %}
+
+
+<div id="tag-editor" class="px-4 py-4 space-y-4">
+    <input class="hidden" id="tag-id"/>
+    <div>
+        <label class="block text-white">Tag</label>
+        <input id="tag-name" type="text"
+               class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"/>
+    </div>
+
+    <div>
+        <label class="block text-white">Depends On</label>
+        <input id="tag-deps" type="text"
+               class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"/>
+    </div>
+
+    <div>
+        <label class="block text-white">Description</label>
+        <textarea id="tag-desc"
+                  class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"></textarea>
+    </div>
+
+    <div>
+        <span id="save-status" class="text-green-400 ml-4 hidden"></span>
+        <div class="flex gap-4">
+            <button id="save-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                💾 Save
+            </button>
+            <button
+                    onclick="handleDelete()"
+                    class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
+            >
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const tagname = decodeURIComponent(window.location.pathname.split("/").pop());
+        const res = await fetch(`/api/tag/${encodeURIComponent(tagname)}`);
+        const json = await res.json();
+        const tag = json.tag;
+
+        document.getElementById("tag-id").value = tag.id;
+        document.getElementById("tag-name").value = tag.name;
+        document.getElementById("tag-deps").value = tag.deps;
+        document.getElementById("tag-desc").value = tag.description;
+
+        document.getElementById("save-btn").addEventListener("click", async () => {
+            const body = {
+                id: parseInt(document.getElementById("tag-id").value),
+                name: document.getElementById("tag-name").value,
+                deps: document.getElementById("tag-deps").value,
+                description: document.getElementById("tag-desc").value,
+            };
+
+            const postRes = await fetch("/api/tag", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
+
+            const postJson = await postRes.json();
+            document.getElementById("save-status").textContent = postJson.msg;
+            document.getElementById("save-status").classList.remove("hidden");
+        });
+    });
+
+    function handleDelete() {
+        if (!confirm('Are you sure want to delete this tag?')) return;
+        const id = document.getElementById("tag-id").value;
+        fetch(`/api/delete_tag?id=${id}`)
+            .then(res => {
+                if (res.ok) {
+                    window.location.href = "/maintenance";
+                } else {
+                    alert("Failed to delete the item.");
+                }
+            })
+            .catch(err => {
+                console.error("Delete failed:", err);
+                alert("Error while deleting.");
+            });
+    }
+</script>
+
+</body>
+</html>

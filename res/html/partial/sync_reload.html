@@ -1,0 +1,40 @@
+
+<div class="px-4 flex justify-center gap-4">
+    <button
+            id="reloadBtn"
+            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+    >
+        🔁 Scan Folder
+    </button>
+
+    <button
+            id="syncBtn"
+            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+    >
+        🔗 Sync from Civitai
+    </button>
+</div>
+
+
+<script>
+    async function callAndRefresh(endpoint) {
+        try {
+            showLoading(true);
+            await fetch(endpoint);
+        } catch (err) {
+            console.error(`Failed to call ${endpoint}`, err);
+        } finally {
+            alert("Task has been sent");
+            await refreshContent();
+            showLoading(false);
+        }
+    }
+
+    document.getElementById("reloadBtn").addEventListener("click", () => {
+        callAndRefresh("/api/scan_folder");
+    });
+
+    document.getElementById("syncBtn").addEventListener("click", () => {
+        callAndRefresh("/api/sync_civitai");
+    });
+</script>

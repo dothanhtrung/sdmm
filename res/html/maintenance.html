@@ -1,0 +1,87 @@
+{% include "partial/header.html" %}
+
+
+<div class="px-4 py-5 flex flex-col justify-center space-y-4">
+    
+    <button
+            id="reloadBtn"
+            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+    >
+        🔁 Scan Folder
+    </button>
+
+    <button
+            id="syncBtn"
+            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+    >
+        🔗 Sync from Civitai
+    </button>
+
+    <button
+            id="emptyTrashBtn"
+            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+    >
+        🗑️ Empty Trash
+    </button>
+
+    <button
+            id="removeOrphanBtn"
+            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+    >
+        🧹 DB: Clean orphaned items
+    </button>
+</div>
+
+<div>
+    <h2><strong>Tags</strong></h2>
+    <div id="all-tags" class="gap-2 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9">
+
+    </div>
+</div>
+
+<script>
+    async function sendAction(endpoint) {
+        try {
+            await fetch(endpoint);
+        } catch (err) {
+            console.error(`Failed to call ${endpoint}`, err);
+        } finally {
+            alert("Success sending maintenance task.");
+        }
+    }
+
+    document.getElementById("reloadBtn").addEventListener("click", () => {
+        sendAction("/api/scan_folder");
+    });
+
+    document.getElementById("syncBtn").addEventListener("click", () => {
+        sendAction("/api/sync_civitai");
+    });
+
+    document.getElementById("emptyTrashBtn").addEventListener("click", () => {
+        sendAction("/api/empty_trash");
+    })
+
+    document.getElementById("removeOrphanBtn").addEventListener("click", () => {
+        sendAction("/api/remove_orphan");
+    })
+
+    async function fetchTags() {
+        const grid = document.getElementById("all-tags");
+        grid.innerHTML = "";
+        const fetched = await fetch("/api/list_tags");
+        const tags = await fetched.json();
+        tags.forEach(tag => {
+            console.log(tag.tag);
+            const tags_card = document.createElement("a");
+            tags_card.href = `/tag/${tag.tag}`;
+            tags_card.className = "text-blue-300 hover:text-blue-400";
+            tags_card.innerText = tag.tag + "(" + tag.count + ")";
+            grid.appendChild(tags_card);
+        })
+    }
+    fetchTags();
+</script>
+
+</body>
+</html>

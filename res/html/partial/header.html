@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href="/css/tailwind_output.min.css" rel="stylesheet">
+    <title>Stable Diffusion Models Manager</title>
+</head>
+<body class="bg-black text-white">
+
+<div class="w-full flex items-center justify-between shadow-md px-4 py-3">
+
+    <!-- Left: Icon + Title + Navigation -->
+    <div class="flex items-center space-x-5">
+<!--        <img src="/assets/icon.png" alt="" class="w-8 h-8"/>-->
+        <a href="/"><span class="text-2xl font-bold">SDMM</span></a>
+        <nav class="flex items-center space-x-4 ml-6">
+            <a href="/" class="hover:text-white transition font-bold">Home</a>
+            <a href="/civitai" class="hover:text-white transition font-bold">Civitai</a>
+            <a href="/maintenance" class="hover:text-white transition font-bold">Maintenance</a>
+        </nav>
+    </div>
+
+    <!-- Right: GitHub + Search -->
+    <div class="flex items-center space-x-4">
+        <a href="https://github.com/dothanhtrung/sd-models-manager" target="_blank" class="hover:text-white">
+            <!-- GitHub SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                <path d="M12 .5C5.73.5.5 5.73.5 12.02c0 5.1 3.29 9.42 7.86 10.96.58.1.79-.25.79-.56 0-.28-.01-1.2-.02-2.17-3.2.7-3.88-1.55-3.88-1.55-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.2 1.77 1.2 1.02 1.75 2.68 1.25 3.33.96.1-.74.4-1.25.72-1.53-2.55-.29-5.23-1.28-5.23-5.71 0-1.26.45-2.3 1.2-3.12-.12-.29-.52-1.45.11-3.02 0 0 .98-.31 3.2 1.2.94-.26 1.94-.38 2.94-.38s2 .13 2.94.38c2.22-1.52 3.2-1.2 3.2-1.2.63 1.57.23 2.73.11 3.02.75.82 1.2 1.86 1.2 3.12 0 4.44-2.68 5.42-5.24 5.7.41.36.77 1.08.77 2.18 0 1.58-.01 2.86-.01 3.25 0 .31.21.67.8.56A10.5 10.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"/>
+            </svg>
+        </a>
+    </div>
+</div>
+
+<script>
+    function getApiUrl() {
+        const path = window.location.pathname;
+        const search = window.location.search;
+        return "/api" + (path === "/" ? "" : path) + search;
+    }
+</script>

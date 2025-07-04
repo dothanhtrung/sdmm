@@ -1,0 +1,19 @@
+
+<aside class="bg-gray-900 border-r border-gray-800 p-4 flex-shrink-0 order-2 md:order-1">
+    <span id="tag_bar"
+          class="flex flex-col gap-2 mt-2  justify-center justify-items-center justify-self-center"></span>
+</aside>
+
+<script>
+    function display_tag(tags) {
+        const tagContainer = document.getElementById("tag_bar");
+        tagContainer.innerHTML = "";
+        (tags || []).forEach(tag => {
+            const a = document.createElement("a");
+            a.href = `/?search=${encodeURIComponent(tag.tag)}&tag_only=true`;
+            a.textContent = tag.tag + "(" + tag.count + ")";
+            a.className = " text-emerald-100 px-2 py-0.9 rounded text-sm hover:text-emerald-200 transition  justify-center justify-items-center justify-self-center";
+            tagContainer.appendChild(a);
+        });
+    }
+</script>

@@ -1,0 +1,14 @@
+.idea/
+
+**/*.sqlite
+
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+
+.DS_*
+*.log
+logs
+node_modules

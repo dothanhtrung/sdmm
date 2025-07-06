@@ -14,8 +14,11 @@ pub struct DBPool {
 
 impl DBPool {
     pub async fn init(config: &DBConfig) -> anyhow::Result<Self> {
-        let opts = SqliteConnectOptions::from_str(&config.sqlite.db_path)?.foreign_keys(true);
+        let opts = SqliteConnectOptions::from_str(&config.sqlite.db_path)?
+            .foreign_keys(true)
+            .create_if_missing(true);
         let sqlite_pool = SqlitePool::connect_with(opts).await?;
+        sqlx::migrate!("./migrations").run(&sqlite_pool).await?;
 
         Ok(Self { sqlite_pool })
     }

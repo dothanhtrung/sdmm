@@ -13,7 +13,7 @@ const DEFAULT_LISTEN_PORT: u32 = 9696;
 
 const DEFAULT_DB_INIT_TIMEOUT_SEC: u64 = 5;
 
-const DEFAULT_SQLITE_PATH: &str = "sd-models-manager.sqlite";
+const DEFAULT_SQLITE_PATH: &str = "sdmm.sqlite";
 
 const DEFAULT_API_PER_PAGE: u32 = 20;
 

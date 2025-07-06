@@ -2,7 +2,7 @@
     db: (
         init_timeout_secs: 5,
         sqlite: (
-            db_path: "sd-models-manager.sqlite",
+            db_path: "./sdmm.sqlite",
         ),
     ),
     model_paths: {

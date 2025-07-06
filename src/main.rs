@@ -48,7 +48,7 @@ const BASE_PATH_PREFIX: &str = "base_";
 #[command(version, about)]
 struct Cli {
     /// Config file path
-    #[clap(short, long, default_value = "./sd-models-manager.ron")]
+    #[clap(short, long, default_value = "./sdmm.ron")]
     config: PathBuf,
 
     /// Export default config to file

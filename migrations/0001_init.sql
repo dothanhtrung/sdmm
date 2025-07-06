@@ -1,10 +1,10 @@
-create table app_info
+ create table if not exists app_info
 (
     label TEXT    not null,
     value integer not null
 );
 
-create table item
+ create table if not exists item
 (
     id         integer              not null
         constraint item_pk
@@ -22,7 +22,7 @@ create table item
         unique (path, base_label)
 );
 
-create table tag_type
+ create table if not exists tag_type
 (
     id   integer not null
         constraint tag_type_pk
@@ -30,7 +30,7 @@ create table tag_type
     type TEXT    not null
 );
 
-create table tag
+ create table if not exists tag
 (
     name        TEXT            not null
         constraint tag_pk_2
@@ -44,7 +44,7 @@ create table tag
             references tag_type
 );
 
-create table tag_item
+ create table if not exists tag_item
 (
     tag  INTEGER not null
         constraint tag_item_tag_id_fk
@@ -58,10 +58,10 @@ create table tag_item
         primary key (tag, item)
 );
 
-create unique index tag_item_item_tag_uindex
+create unique index if not exists tag_item_item_tag_uindex
     on tag_item (item, tag);
 
-create table tag_tag
+ create table if not exists tag_tag
 (
     tag INTEGER not null
         constraint tag_tag_tag_id_fk

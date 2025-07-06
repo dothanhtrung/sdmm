@@ -1,16 +1,23 @@
 Stable Diffusion Models Manager
 ===============================
 
-Manage your local Stable Diffusion models.
+Standalone web app to manage your local Stable Diffusion models.
+
+Features:
+* [x] Manage model with tag.
+* [x] Get preview image and model info from Civitai by hash.
+* [x] Download from Civitai
+
+![](./preview.png)
 
 How to run
 ----------
 
-See the sample config at [sd-models-manager.sample.ron](./sd-models-manager.sample.ron) and update to your need.
+See the sample config at [sdmm-config-sample.ron](./sdmm-config-sample.ron) and update to your need.
 
 Run the web server:
 ```shell
-./sd-models-manager -c ./path/to/config.ron
+./sdmm -c ./path/to/config.ron
 ```
 
 How to build

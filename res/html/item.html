@@ -3,12 +3,12 @@
 
 
 <div class="px-4 flex justify-start gap-4 ">
-<button
-        onclick="handleDelete({{id}})"
-        class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
->
-    Delete
-</button>
+    <button
+            onclick="handleDelete({{id}})"
+            class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
+    >
+        Delete
+    </button>
 </div>
 
 <div class="flex flex-col md:flex-row">
@@ -43,11 +43,10 @@
                 <div>
                     <h2 class="text-xl font-bold mb-2 text-purple-400">Info</h2>
                     <pre id="item-info"
-                         class="bg-gray-900 p-4 rounded text-sm overflow-auto max-h-128 whitespace-pre-wrap border border-gray-800"></pre>
+                         class="bg-gray-900 p-4 rounded text-sm overflow-auto max-h-256 whitespace-pre-wrap border border-gray-800"></pre>
                 </div>
             </div>
 
-            <!-- Right: Image -->
             <div class="md:order-2 order-1">
                 <video id="item-video" controls class="w-full rounded shadow border border-gray-700 hidden"></video>
                 <img id="item-preview" src="" alt="Preview" class="w-full rounded shadow border border-gray-700 hidden">
@@ -96,7 +95,7 @@
 
             const img_preview = document.getElementById("item-preview");
             const vid_preview = document.getElementById("item-video");
-            img_preview.src =  item.preview || "";
+            img_preview.src = item.preview || "";
             vid_preview.src = item.video_preview || "";
             if (item.video_preview) {
                 vid_preview.classList.remove("hidden");
@@ -111,8 +110,8 @@
             (tags || []).forEach(tag => {
                 tagEditBox.append(tag.tag + " ");
             });
-            
-            
+
+
             document.getElementById("item-info").textContent = formatJson(item.info);
 
         });

@@ -199,9 +199,10 @@ pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<
         .fetch_all(pool)
         .await
     } else {
+        // TODO: Count all for index page
         let placeholders = vec!["?"; item_ids.len()].join(",");
         let sql = format!(
-            "SELECT tag.name as tag, COUNT(*) as count FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag \
+            "SELECT tag.name as tag, COUNT(tag_item.tag) as count FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag \
         LEFT JOIN item ON item.id = tag_item.item \
         WHERE tag_item.item IN ({placeholders}) GROUP BY tag.name ORDER BY count DESC"
         );

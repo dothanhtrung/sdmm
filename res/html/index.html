@@ -103,9 +103,12 @@
             data.items.forEach(item => {
                 const card = document.createElement("div");
                 card.className = "relative bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-md";
+                const info = JSON.parse(item.info);
+                const modelType = info?.model?.type || "";
                 card.innerHTML = `
                     <a href="/item/${item.id}">
                         <img src="${item.preview}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">
+                        <div class="absolute top-0 left-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">${modelType}</div>
                     </a>
                     <div class="p-4 flex flex-row gap-2">
                         <h2 class="text-lg font-semibold truncate">

@@ -161,7 +161,7 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
         let mut video_preview = None;
 
         // Query for only one item
-        if query_params.id.is_some() {
+        // if query_params.id.is_some() {
             let info_str = fs::read_to_string(&json_url).await.unwrap_or_default();
             let v: Value = serde_json::from_str(info_str.as_str()).unwrap_or_default();
             if let Some(url) = v["images"][0]["url"].as_str() {
@@ -179,7 +179,7 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
             }
 
             info = info_str;
-        }
+        // }
 
         item_ids.insert(item.id);
 

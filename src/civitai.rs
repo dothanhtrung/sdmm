@@ -108,6 +108,7 @@ pub async fn download_file(url: &str, path: &Path, client: &Client, headers: &He
         file.write_all(&chunk)?;
     }
     file.flush()?;
+    info!("File downloaded: {}", path.display());
     Ok(())
 }
 

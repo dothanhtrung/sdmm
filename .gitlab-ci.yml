@@ -20,3 +20,9 @@ check:
   script:
     - rustc --version && cargo --version  # Print version info for debugging
     - cargo check
+  rules:
+    - changes:
+        - Cargo.toml
+        - src/**/*
+        - examples/**/*
+        - tests/**/*

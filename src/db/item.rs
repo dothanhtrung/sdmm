@@ -162,7 +162,7 @@ pub async fn search(
             tags.join("','")
         );
         let query = format!(
-            "SELECT item.id as id,  item.name as name, item.path as path, item.base_label as base_label {} ORDER BY item.id DESC LIMIT {} OFFSET {}",
+            "SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label {} ORDER BY item.id DESC LIMIT {} OFFSET {}",
             condition,
             limit,
             offset

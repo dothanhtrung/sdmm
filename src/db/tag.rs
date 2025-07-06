@@ -191,11 +191,10 @@ pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<
     if item_ids.is_empty() {
         sqlx::query_as!(
             TagCount,
-            r#"SELECT tag.name as tag, COUNT(*) as count FROM tag
+            r#"SELECT tag.name as tag, COUNT(tag_item.tag) as count FROM tag
                 LEFT JOIN tag_item ON tag.id = tag_item.tag
                 LEFT JOIN item ON item.id = tag_item.item
-                WHERE item.is_checked = true
-                GROUP BY tag_item.tag ORDER BY count DESC"#
+                GROUP BY tag.name ORDER BY count DESC"#
         )
         .fetch_all(pool)
         .await
@@ -204,7 +203,7 @@ pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<
         let sql = format!(
             "SELECT tag.name as tag, COUNT(*) as count FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag \
         LEFT JOIN item ON item.id = tag_item.item \
-        WHERE item.is_checked = true AND tag_item.item IN ({placeholders}) GROUP BY tag_item.tag ORDER BY count DESC"
+        WHERE tag_item.item IN ({placeholders}) GROUP BY tag.name ORDER BY count DESC"
         );
         let mut query = sqlx::query_as::<_, TagCount>(&sql);
         for id in item_ids {

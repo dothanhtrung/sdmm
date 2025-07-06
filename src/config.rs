@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::Path;
 use tracing::log::info;
 
 const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0";
@@ -112,13 +112,13 @@ impl Default for Config {
 
 impl Config {
     /// Load config from file
-    pub fn load(config_path: &PathBuf) -> anyhow::Result<Self> {
+    pub fn load(config_path: &Path) -> anyhow::Result<Self> {
         let file = File::open(config_path)?;
         ron::de::from_reader(file).map_err(|e| anyhow::anyhow!(e))
     }
 
     /// Save config to file
-    pub fn save(&self, config_path: &PathBuf, force_overwrite: bool) -> anyhow::Result<()> {
+    pub fn save(&self, config_path: &Path, force_overwrite: bool) -> anyhow::Result<()> {
         info!("Saving config file to: {:?}", config_path.display());
         if config_path.exists() && !force_overwrite {
             return Err(anyhow::anyhow!("Do not save. Configuration file already exists"));

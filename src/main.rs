@@ -34,7 +34,7 @@ use actix_web::web::Data;
 use actix_web::{middleware, web, App, HttpServer};
 use anyhow::anyhow;
 use clap::Parser;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -87,9 +87,16 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Load config file
-    let config = match Config::load(&args.config) {
-        Ok(c) => c,
-        Err(e) => return Err(anyhow!("Failed to load config file {}: {}", &args.config.display(), e)),
+    let config_path = Path::new(&args.config);
+    let config = if config_path.exists() {
+        match Config::load(&args.config) {
+            Ok(c) => c,
+            Err(e) => return Err(anyhow!("Failed to load config file {}: {}", &args.config.display(), e)),
+        }
+    } else {
+        let default_config = Config::default();
+        default_config.save(config_path, false)?;
+        default_config
     };
 
     if args.update_model_info {

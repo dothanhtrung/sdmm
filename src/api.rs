@@ -211,7 +211,7 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
 #[get("scan_folder")]
 async fn scan_folder(config: Data<ConfigData>, db_pool: Data<DBPool>) -> impl Responder {
     rt::spawn(async move {
-        reload(config, db_pool).await;
+        scan(config, db_pool).await;
     });
     web::Json("")
 }
@@ -233,7 +233,7 @@ async fn sync_civitai(config_data: Data<ConfigData>, db_pool: Data<DBPool>) -> i
     let config = config_data.config.lock().await.clone();
     rt::spawn(async move {
         let _ = update_model_info(config).await;
-        reload(config_data, db_pool).await;
+        scan(config_data, db_pool).await;
     });
     web::Json("")
 }
@@ -257,7 +257,11 @@ async fn saved_location(config: Data<ConfigData>, query_params: Query<SavedLocat
 }
 
 #[get("civitai_download")]
-async fn civitai_download(config_data: Data<ConfigData>, params: Query<CivitaiDownloadQuery>) -> impl Responder {
+async fn civitai_download(
+    db_pool: Data<DBPool>,
+    config_data: Data<ConfigData>,
+    params: Query<CivitaiDownloadQuery>,
+) -> impl Responder {
     let mut config = config_data.config.lock().await.clone();
     let mut path = PathBuf::from(&params.dest);
 
@@ -305,6 +309,14 @@ async fn civitai_download(config_data: Data<ConfigData>, params: Query<CivitaiDo
             civitai::get_model_info(&path, &client, &headers, Some(params.blake3.clone()), &config.civitai).await
         {
             error!("Failed to get model info: {}", e);
+        }
+
+        for (label, base_path) in config.model_paths.iter() {
+            if path.starts_with(PathBuf::from(base_path)) {
+                let relative_path = get_relative_path(base_path, &path).unwrap_or_default();
+                save_model_info(&db_pool, &path, label, relative_path.as_str()).await;
+                break;
+            }
         }
     });
 
@@ -440,7 +452,7 @@ fn list_same_filename(path: &Path) -> std::io::Result<Vec<PathBuf>> {
     Ok(matches)
 }
 
-fn get_relative_path(base_path: &str, path: &PathBuf) -> Result<String, anyhow::Error> {
+fn get_relative_path(base_path: &str, path: &Path) -> Result<String, anyhow::Error> {
     let base = PathBuf::from(base_path);
     let path = path.strip_prefix(&base)?;
     Ok(path.to_str().unwrap_or_default().to_string())
@@ -467,7 +479,7 @@ fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String
     (model, json, preview)
 }
 
-async fn reload(config: Data<ConfigData>, db_pool: Data<DBPool>) {
+async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
     let config = config.config.lock().await;
     let valid_ext = config.extensions.iter().collect::<HashSet<_>>();
 
@@ -487,13 +499,6 @@ async fn reload(config: Data<ConfigData>, db_pool: Data<DBPool>) {
         {
             let path = entry.path();
 
-            let name = path
-                .file_name()
-                .unwrap_or_default()
-                .to_str()
-                .unwrap_or_default()
-                .to_string();
-
             let Ok(relative_path) = get_relative_path(base_path, &path) else {
                 continue;
             };
@@ -501,42 +506,49 @@ async fn reload(config: Data<ConfigData>, db_pool: Data<DBPool>) {
             if entry.file_type().is_file() || entry.file_type().is_symlink() {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
-                    let mut json_file = path.clone();
-                    json_file.set_extension("json");
-                    let info = fs::read_to_string(&json_file).await.unwrap_or_default();
-                    let v: Value = serde_json::from_str(&info).unwrap_or_default();
-
-                    let base_model = v["baseModel"].as_str().unwrap_or_default();
-                    let blake3 = v["files"][0]["hashes"]["BLAKE3"].as_str().unwrap_or_default();
-                    let file_metadata =
-                        serde_json::from_value::<CivitaiFileMetadata>(v["files"][0]["metadata"].clone())
-                            .unwrap_or_default();
-                    let model_info = serde_json::from_value::<CivitaiModel>(v["model"].clone()).unwrap_or_default();
-
-                    match insert_or_update(
-                        &db_pool.sqlite_pool,
-                        Some(name.as_str()),
-                        &relative_path,
-                        label,
-                        blake3,
-                        &model_info.name,
-                    )
-                    .await
-                    {
-                        Ok(id) => {
-                            let tags = vec![base_model.to_string()];
-                            if let Err(e) =
-                                add_tag_from_model_info(&db_pool.sqlite_pool, id, &tags, &model_info, &file_metadata)
-                                    .await
-                            {
-                                error!("Failed to insert tag: {}", e);
-                            }
-                        }
-                        Err(e) => error!("Failed to insert item: {}", e),
-                    }
+                    save_model_info(&db_pool, &path, label, relative_path.as_str()).await;
                 }
             }
         }
+    }
+}
+
+async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_path: &str) {
+    let mut json_file = PathBuf::from(path);
+    json_file.set_extension("json");
+    let info = fs::read_to_string(&json_file).await.unwrap_or_default();
+    let v: Value = serde_json::from_str(&info).unwrap_or_default();
+
+    let base_model = v["baseModel"].as_str().unwrap_or_default();
+    let blake3 = v["files"][0]["hashes"]["BLAKE3"].as_str().unwrap_or_default();
+    let file_metadata =
+        serde_json::from_value::<CivitaiFileMetadata>(v["files"][0]["metadata"].clone()).unwrap_or_default();
+    let model_info = serde_json::from_value::<CivitaiModel>(v["model"].clone()).unwrap_or_default();
+    let name = path
+        .file_name()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        .to_string();
+
+    match insert_or_update(
+        &db_pool.sqlite_pool,
+        Some(name.as_str()),
+        relative_path,
+        label,
+        blake3,
+        &model_info.name,
+    )
+    .await
+    {
+        Ok(id) => {
+            let tags = vec![base_model.to_string()];
+            if let Err(e) = add_tag_from_model_info(&db_pool.sqlite_pool, id, &tags, &model_info, &file_metadata).await
+            {
+                error!("Failed to insert tag: {}", e);
+            }
+        }
+        Err(e) => error!("Failed to insert item: {}", e),
     }
 }
 

@@ -2,30 +2,31 @@
 {% include "partial/search.html" %}
 {% include "partial/sync_reload.html" %}
 
+<main class="flex-grow">
+    <div class="flex flex-col md:flex-row w-full">
 
-<div class="flex flex-col md:flex-row">
+        <!-- Main content section -->
+        <div id="main-content" class="px-4 py-6 order-1 md:order-2 w-full">
+            {% include "partial/loading.html" %}
 
-    <!-- Main content section -->
-    <div id="main-content" class="px-4 py-6 order-1 md:order-2">
-        {% include "partial/loading.html" %}
+            <div class="flex justify-start items-center my-4">
+                <div id="paginationTop" class="inline-flex flex-wrap items-center gap-1"></div>
+            </div>
 
-        <div class="flex justify-start items-center my-4">
-            <div id="paginationTop" class="inline-flex flex-wrap items-center gap-1"></div>
+            <div id="grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+
+            </div>
+
+            <div class="flex justify-start items-center my-4">
+                <div id="paginationBottom" class="inline-flex flex-wrap items-center gap-1"></div>
+            </div>
+
         </div>
 
-        <div id="grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-
-        </div>
-
-        <div class="flex justify-start items-center my-4">
-            <div id="paginationBottom" class="inline-flex flex-wrap items-center gap-1"></div>
-        </div>
+        {% include "partial/tagbar.html" %}
 
     </div>
-
-    {% include "partial/tagbar.html" %}
-
-</div>
+</main>
 
 <script>
     const grid = document.getElementById("grid");
@@ -162,5 +163,4 @@
     }
 </script>
 
-</body>
-</html>
+{% include "partial/footer.html" %}

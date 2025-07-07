@@ -42,6 +42,7 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
             .service(get_tag)
             .service(update_tag)
             .service(delete_tag)
+            .service(check_downloaded)
             .service(sync_civitai),
     );
 }
@@ -113,9 +114,15 @@ struct TagResponse {
     msg: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 struct CommonResponse {
     msg: String,
+    err: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CheckDownloadedQuery {
+    blake3: String,
 }
 
 #[get("")]
@@ -162,23 +169,23 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
 
         // Query for only one item
         // if query_params.id.is_some() {
-            let info_str = fs::read_to_string(&json_url).await.unwrap_or_default();
-            let v: Value = serde_json::from_str(info_str.as_str()).unwrap_or_default();
-            if let Some(url) = v["images"][0]["url"].as_str() {
-                if let Some(ext) = get_extension_from_url(url) {
-                    let mut abs_preview = PathBuf::from(&model_url);
-                    abs_preview.set_extension(&ext);
-                    if file_type(&abs_preview).await == FileType::Video {
-                        let mut video_preview_path = PathBuf::from(&preview_url);
-                        video_preview_path.set_extension(&ext);
-                        if let Some(str_path) = video_preview_path.to_str() {
-                            video_preview = Some(str_path.to_string());
-                        }
+        let info_str = fs::read_to_string(&json_url).await.unwrap_or_default();
+        let v: Value = serde_json::from_str(info_str.as_str()).unwrap_or_default();
+        if let Some(url) = v["images"][0]["url"].as_str() {
+            if let Some(ext) = get_extension_from_url(url) {
+                let mut abs_preview = PathBuf::from(&model_url);
+                abs_preview.set_extension(&ext);
+                if file_type(&abs_preview).await == FileType::Video {
+                    let mut video_preview_path = PathBuf::from(&preview_url);
+                    video_preview_path.set_extension(&ext);
+                    if let Some(str_path) = video_preview_path.to_str() {
+                        video_preview = Some(str_path.to_string());
                     }
                 }
             }
+        }
 
-            info = info_str;
+        info = info_str;
         // }
 
         item_ids.insert(item.id);
@@ -267,7 +274,8 @@ async fn civitai_download(
 
     if let Err(e) = fs::create_dir_all(&path).await {
         return web::Json(CommonResponse {
-            msg: format!("Failed to create {:?}: {}", path, e),
+            err: Some(format!("Failed to create {path:?}: {e}")),
+            ..Default::default()
         });
     }
 
@@ -284,7 +292,8 @@ async fn civitai_download(
     if !is_inside_base_path {
         error!("Destination path {} must be inside base path", path.display());
         return web::Json(CommonResponse {
-            msg: "Destination path must be inside base path".to_string(),
+            err: Some("Destination path must be inside base path".to_string()),
+            ..Default::default()
         });
     }
 
@@ -321,7 +330,8 @@ async fn civitai_download(
     });
 
     web::Json(CommonResponse {
-        msg: "Download started".to_string(),
+        msg: "Downloading in background".to_string(),
+        ..Default::default()
     })
 }
 
@@ -423,6 +433,31 @@ async fn delete_tag(db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl
     web::Json("")
 }
 
+#[get("check_downloaded")]
+async fn check_downloaded(db_pool: Data<DBPool>, params: Query<CheckDownloadedQuery>) -> impl Responder {
+    if params.blake3.is_empty() {
+        return web::Json(CommonResponse {
+            err: None,
+            ..Default::default()
+        });
+    }
+
+    if item::get_by_hash(&db_pool.sqlite_pool, params.blake3.as_str())
+        .await
+        .is_ok()
+    {
+        web::Json(CommonResponse {
+            err: Some("Existed".to_string()),
+            ..Default::default()
+        })
+    } else {
+        web::Json(CommonResponse {
+            err: None,
+            ..Default::default()
+        })
+    }
+}
+
 async fn move_to_dir(files: &[PathBuf], dir: &PathBuf) -> anyhow::Result<()> {
     for file in files {
         let file_name = file.file_name().unwrap_or_default();
@@ -520,6 +555,7 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
     let v: Value = serde_json::from_str(&info).unwrap_or_default();
 
     let base_model = v["baseModel"].as_str().unwrap_or_default();
+    // TODO: Fix compare the real file hash
     let blake3 = v["files"][0]["hashes"]["BLAKE3"].as_str().unwrap_or_default();
     let file_metadata =
         serde_json::from_value::<CivitaiFileMetadata>(v["files"][0]["metadata"].clone()).unwrap_or_default();

@@ -102,8 +102,8 @@ pub async fn get(pool: &SqlitePool, limit: i64, offset: i64) -> Result<(Vec<Item
         limit,
         offset
     )
-    .fetch_all(pool)
-    .await?;
+        .fetch_all(pool)
+        .await?;
 
     let total = sqlx::query_scalar!("SELECT count(id) FROM item WHERE is_checked = true",)
         .fetch_one(pool)
@@ -117,8 +117,8 @@ pub async fn get_tags(pool: &SqlitePool, id: i64) -> Result<Vec<String>, sqlx::E
         "SELECT tag.name FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag WHERE tag_item.item = ? ORDER BY tag.name",
         id
     )
-    .fetch_all(pool)
-    .await
+        .fetch_all(pool)
+        .await
 }
 
 pub async fn search(
@@ -131,7 +131,7 @@ pub async fn search(
     let mut items = HashSet::new();
     let mut count = 0;
     if !tag_only {
-        let  items_by_name = sqlx::query_as!(
+        let items_by_name = sqlx::query_as!(
         Item,
         r#"SELECT id,name, path, base_label, note FROM item WHERE is_checked = true AND name COLLATE NOCASE LIKE '%' || ? || '%' OR model_name LIKE '%' || ? || '%' ORDER BY id DESC LIMIT ? OFFSET ?"#,
         search, search, limit, offset
@@ -143,8 +143,8 @@ pub async fn search(
             search,
             search
         )
-        .fetch_one(pool)
-        .await?;
+            .fetch_one(pool)
+            .await?;
 
         items.extend(items_by_name);
         count += count_by_name;
@@ -177,4 +177,14 @@ pub async fn search(
     }
 
     Ok((items.into_iter().collect(), count))
+}
+
+pub async fn get_by_hash(pool: &SqlitePool, blake3: &str) -> Result<Item, sqlx::Error> {
+    sqlx::query_as!(
+        Item,
+        "SELECT id, name, path, base_label, note FROM item WHERE is_checked = true AND blake3 = ?",
+        blake3
+    )
+    .fetch_one(pool)
+    .await
 }

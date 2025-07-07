@@ -1,41 +1,42 @@
 {% include "partial/header.html" %}
 
+<main class="flex-grow">
+    <div id="tag-editor" class="px-4 py-4 space-y-4">
+        <input class="hidden" id="tag-id"/>
+        <div>
+            <label class="block text-white">Tag</label>
+            <input id="tag-name" type="text"
+                   class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"/>
+        </div>
 
-<div id="tag-editor" class="px-4 py-4 space-y-4">
-    <input class="hidden" id="tag-id"/>
-    <div>
-        <label class="block text-white">Tag</label>
-        <input id="tag-name" type="text"
-               class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"/>
-    </div>
+        <div>
+            <label class="block text-white">Depends On</label>
+            <input id="tag-deps" type="text"
+                   class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"/>
+        </div>
 
-    <div>
-        <label class="block text-white">Depends On</label>
-        <input id="tag-deps" type="text"
-               class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"/>
-    </div>
+        <div>
+            <label class="block text-white">Description</label>
+            <textarea id="tag-desc"
+                      class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"></textarea>
+        </div>
 
-    <div>
-        <label class="block text-white">Description</label>
-        <textarea id="tag-desc"
-                  class="w-full bg-gray-800 text-white border border-gray-600 px-3 py-2 rounded"></textarea>
-    </div>
-
-    <div>
-        <span id="save-status" class="text-green-400 ml-4 hidden"></span>
-        <div class="flex gap-4">
-            <button id="save-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                💾 Save
-            </button>
-            <button
-                    onclick="handleDelete()"
-                    class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
-            >
-                Delete
-            </button>
+        <div>
+            <span id="save-status" class="text-green-400 ml-4 hidden"></span>
+            <div class="flex gap-4">
+                <button id="save-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    💾 Save
+                </button>
+                <button
+                        onclick="handleDelete()"
+                        class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
+                >
+                    Delete
+                </button>
+            </div>
         </div>
     </div>
-</div>
+</main>
 
 <script>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -89,5 +90,4 @@
     }
 </script>
 
-</body>
-</html>
+{% include "partial/footer.html" %}

@@ -1,43 +1,44 @@
 {% include "partial/header.html" %}
 
+<main class="flex-grow">
+    <div class="px-4 py-5 flex flex-col justify-center space-y-4">
 
-<div class="px-4 py-5 flex flex-col justify-center space-y-4">
-    
-    <button
-            id="reloadBtn"
-            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
-    >
-        🔁 Scan Folder
-    </button>
+        <button
+                id="reloadBtn"
+                class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+        >
+            🔁 Scan Folder
+        </button>
 
-    <button
-            id="syncBtn"
-            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
-    >
-        🔗 Sync from Civitai
-    </button>
+        <button
+                id="syncBtn"
+                class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+        >
+            🔗 Sync from Civitai
+        </button>
 
-    <button
-            id="emptyTrashBtn"
-            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
-    >
-        🗑️ Empty Trash
-    </button>
+        <button
+                id="emptyTrashBtn"
+                class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+        >
+            🗑️ Empty Trash
+        </button>
 
-    <button
-            id="removeOrphanBtn"
-            class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
-    >
-        🧹 DB: Clean orphaned items
-    </button>
-</div>
-
-<div>
-    <h2><strong>Tags</strong></h2>
-    <div id="all-tags" class="gap-2 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9">
-
+        <button
+                id="removeOrphanBtn"
+                class="bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition"
+        >
+            🧹 DB: Clean orphaned items
+        </button>
     </div>
-</div>
+
+    <div>
+        <h2><strong>Tags</strong></h2>
+        <div id="all-tags" class="gap-2 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9">
+
+        </div>
+    </div>
+</main>
 
 <script>
     async function sendAction(endpoint) {
@@ -80,8 +81,8 @@
             grid.appendChild(tags_card);
         })
     }
+
     fetchTags();
 </script>
 
-</body>
-</html>
+{% include "partial/footer.html" %}

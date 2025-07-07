@@ -24,7 +24,7 @@
         } catch (err) {
             console.error(`Failed to call ${endpoint}`, err);
         } finally {
-            alert("Task has been sent");
+            alert("Task is running in the background.");
             await refreshContent();
             showLoading(false);
         }

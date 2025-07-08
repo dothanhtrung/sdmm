@@ -331,6 +331,7 @@ async fn civitai_download(
 
     rt::spawn(async move {
         info!("Downloading file {}: {}", params.name, params.url);
+        // TODO: Verify checksum of downloaded file
         if let Err(e) = download_file(params.url.as_str(), &path, &client, &headers).await {
             error!("Failed to download file: {}", e);
         }

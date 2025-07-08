@@ -8,6 +8,7 @@
 //!   * Support more filters
 //! * Download new version of model from Civitai
 //! * Duplicate check
+//! * Setting page
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;

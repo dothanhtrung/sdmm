@@ -214,7 +214,7 @@
                     const url = `/api/civitai_download?blake3=${file.hashes?.BLAKE3}&dest=${path}&url=${file.downloadUrl}&name=${file.name}&model_type=${encodeURIComponent(item.type || '')}`;
                     const download_res = await fetch(url);
                     const res_value = await download_res.json();
-                    alert(res_value.msg);
+                    alert(res_value.err);
                 });
             } else {
                 btn.textContent = "Downloaded"

@@ -28,10 +28,19 @@ Run the web server:
 ```shell
 ./sdmm -c ./path/to/config.ron
 ```
+Note: Put the [res](./res) folder in same directory with binary `sdmm`.
 
 How to build
 ------------
 
+Build the application:
 ```shell
 cargo build --release
+```
+
+Update CSS:
+```shell
+cd res
+npm install tailwindcss @tailwindcss/cli 
+npx @tailwindcss/cli -i ./css/tailwind_input.css -o ./css/tailwind_output.min.css --watch --minify
 ```

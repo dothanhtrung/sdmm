@@ -104,7 +104,12 @@
             data.items.forEach(item => {
                 const card = document.createElement("div");
                 card.className = "relative bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-md";
-                const info = JSON.parse(item.info);
+                let info = {};
+                try {
+                    info = JSON.parse(item.info);
+                } catch (err) {
+                    info = {};
+                }
                 const modelType = info?.model?.type || "";
                 card.innerHTML = `
                     <a href="/item/${item.id}">

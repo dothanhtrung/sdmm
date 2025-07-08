@@ -4,7 +4,6 @@ use crate::civitai::{CivitaiFileMetadata, CivitaiModel};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use std::collections::HashSet;
-use tracing::info;
 
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct TagCount {
@@ -215,7 +214,6 @@ pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<
         let mut query = sqlx::query_as::<_, TagCount>(&sql);
         for id in item_ids {
             query = query.bind(id);
-            info!("ID: {id}");
         }
         query.fetch_all(pool).await
     }

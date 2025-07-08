@@ -80,7 +80,7 @@ pub async fn get_model_info(
     blake3: Option<String>,
     config: &CivitaiConfig,
 ) -> anyhow::Result<()> {
-    let info;
+    let info: Value;
     let mut json_path = PathBuf::from(path);
     json_path.set_extension("json");
 
@@ -88,6 +88,11 @@ pub async fn get_model_info(
         let hash = blake3.unwrap_or(calculate_blake3(path)?);
         let url = format!("https://civitai.com/api/v1/model-versions/by-hash/{hash}");
         info = client.get(url).headers(headers.clone()).send().await?.json().await?;
+        if let Some(err) = info["error"].as_str() {
+            if !err.is_empty() {
+                return Err(anyhow::anyhow!(err.to_string()));
+            }
+        }
         save_info(&json_path, &info).await?;
     } else {
         info!("File already exists: {}", json_path.display());

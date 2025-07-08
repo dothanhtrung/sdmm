@@ -70,11 +70,12 @@ async fn civitai(tmpl: Data<Tera>, config_data: Data<ConfigData>) -> impl Respon
 }
 
 #[get("/tag/{name}")]
-async fn tag(tmpl:Data<Tera>, name: web::Path<String>) -> impl Responder {
+async fn tag(tmpl: Data<Tera>) -> impl Responder {
     let ctx = tera::Context::new();
+    // TODO: Print template error
     let template = tmpl
         .render("tag.html", &ctx)
-        .map_err(|e| error::ErrorInternalServerError(format!("Template error: {:?}", e)))
+        .map_err(|e| error::ErrorInternalServerError(format!("Template error: {e:?}")))
         .unwrap_or_default();
     HttpResponse::Ok().content_type("text/html").body(template)
 }

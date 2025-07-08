@@ -28,7 +28,7 @@ pub async fn mark_obsolete(pool: &SqlitePool, id: i64) -> Result<(String, String
     struct Temp {
         path: String,
         base_label: String,
-    };
+    }
     let ret = sqlx::query_as!(Temp, r#"SELECT path, base_label FROM item WHERE id = ?"#, id)
         .fetch_one(pool)
         .await?;
@@ -44,7 +44,7 @@ pub async fn insert_or_update(
     blake3: &str,
     model_name: &str,
 ) -> Result<i64, sqlx::Error> {
-    let mut ret_id = 0;
+    let ret_id;
 
     if let Ok(id) = sqlx::query_scalar!(
         r#"SELECT id FROM item WHERE path = ? AND base_label = ?"#,
@@ -54,9 +54,16 @@ pub async fn insert_or_update(
     .fetch_one(pool)
     .await
     {
-        sqlx::query!(r#"UPDATE item SET is_checked=true WHERE id = ?"#, id,)
-            .execute(pool)
-            .await?;
+        sqlx::query!(
+            r#"UPDATE item SET is_checked=true, blake3=?, model_name =?, base_label=?, name=? WHERE id = ?"#,
+            blake3,
+            model_name,
+            base_label,
+            name,
+            id,
+        )
+        .execute(pool)
+        .await?;
         ret_id = id;
     } else {
         ret_id = sqlx::query!(
@@ -112,14 +119,14 @@ pub async fn get(pool: &SqlitePool, limit: i64, offset: i64) -> Result<(Vec<Item
     Ok((items, total))
 }
 
-pub async fn get_tags(pool: &SqlitePool, id: i64) -> Result<Vec<String>, sqlx::Error> {
-    sqlx::query_scalar!(
-        "SELECT tag.name FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag WHERE tag_item.item = ? ORDER BY tag.name",
-        id
-    )
-        .fetch_all(pool)
-        .await
-}
+// pub async fn get_tags(pool: &SqlitePool, id: i64) -> Result<Vec<String>, sqlx::Error> {
+//     sqlx::query_scalar!(
+//         "SELECT tag.name FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag WHERE tag_item.item = ? ORDER BY tag.name",
+//         id
+//     )
+//         .fetch_all(pool)
+//         .await
+// }
 
 pub async fn search(
     pool: &SqlitePool,
@@ -128,6 +135,7 @@ pub async fn search(
     offset: i64,
     tag_only: bool,
 ) -> Result<(Vec<Item>, i64), sqlx::Error> {
+    //TODO: Search in note too
     let mut items = HashSet::new();
     let mut count = 0;
     if !tag_only {

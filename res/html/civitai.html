@@ -200,16 +200,13 @@
             const input = document.createElement("input");
             input.type = "text";
             input.className = "flex-grow bg-gray-800 text-white px-2 py-2 rounded border border-gray-700";
-            const res = await fetch(`/api/saved_location?model_type=${encodeURIComponent(item.type || '')}`);
+            const res = await fetch(`/api/saved_location?model_type=${encodeURIComponent(item.type || '')}&blake3=${file.hashes?.BLAKE3}`);
             const location = await res.json();
             input.value = location.saved_location || "";
+            const is_downloaded = location.is_downloaded;
 
             const btn = document.createElement("button");
-            console.log("Check downloaded:" + file.hashes?.BLAKE3);
-            const check_downloaded = await fetch(`/api/check_downloaded?blake3=${encodeURIComponent(file.hashes?.BLAKE3 || '')}`);
-            const check_downloaded_json = await check_downloaded.json();
-            const is_downloaded = check_downloaded_json.err || "";
-            if (is_downloaded === "") {
+            if (is_downloaded === false) {
                 btn.textContent = "⬇️ Download";
                 btn.className = "bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded";
                 btn.addEventListener("click", async () => {

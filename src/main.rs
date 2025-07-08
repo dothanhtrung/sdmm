@@ -2,12 +2,10 @@
 //!
 //!
 //! TODO:
-//! * Replace preview image. Add note.
+//! * Replace preview image.
 //! * Create folder and move model
-//! * Tag
-//!   * Tag depend
 //! * Browsing and download model from Civitai
-//!   * Check if file is downloaded
+//!   * Support more filters
 //! * Download new version of model from Civitai
 //! * Duplicate check
 
@@ -24,7 +22,6 @@ mod config;
 mod db;
 mod ui;
 
-use crate::api::scan_folder;
 use crate::civitai::update_model_info;
 use crate::config::Config;
 use crate::db::DBPool;
@@ -39,7 +36,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
-use tracing::{error, warn};
+use tracing::error;
 use tracing_subscriber::EnvFilter;
 
 const BASE_PATH_PREFIX: &str = "base_";
@@ -50,10 +47,6 @@ struct Cli {
     /// Config file path
     #[clap(short, long, default_value = "./sdmm.ron")]
     config: PathBuf,
-
-    /// Export default config to file
-    #[clap(short, long)]
-    export_config: Option<PathBuf>,
 
     /// Update model info
     #[clap(short, long, default_value = "false")]
@@ -78,13 +71,6 @@ async fn main() -> anyhow::Result<()> {
 
     // Parse command line arguments
     let args = Cli::parse();
-
-    // Export default config to file.
-    // Useful when the config file is lost or the config schema is changed between major version.
-    if let Some(export_config_path) = &args.export_config {
-        Config::default().save(export_config_path, false)?;
-        return Ok(());
-    }
 
     // Load config file
     let config_path = Path::new(&args.config);

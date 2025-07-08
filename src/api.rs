@@ -1,8 +1,8 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
 use crate::civitai::{
-    download_file, file_type, get_extension_from_url, update_model_info, CivitaiFileMetadata, CivitaiModel, FileType,
-    PREVIEW_EXT,
+    calculate_blake3, download_file, file_type, get_extension_from_url, update_model_info, CivitaiFileMetadata,
+    CivitaiModel, FileType, PREVIEW_EXT,
 };
 use crate::config::Config;
 use crate::db::item::insert_or_update;
@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::max;
 use std::collections::HashSet;
-
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tracing::{error, info};
@@ -42,7 +41,6 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
             .service(get_tag)
             .service(update_tag)
             .service(delete_tag)
-            .service(check_downloaded)
             .service(sync_civitai),
     );
 }
@@ -94,9 +92,10 @@ struct SavedLocationQuery {
     blake3: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 struct SavedLocationResponse {
     saved_location: String,
+    is_downloaded: bool,
 }
 
 #[derive(Deserialize)]
@@ -118,11 +117,6 @@ struct TagResponse {
 struct CommonResponse {
     msg: String,
     err: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct CheckDownloadedQuery {
-    blake3: String,
 }
 
 #[get("")]
@@ -164,13 +158,11 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
     let mut item_ids = HashSet::new();
     for item in items {
         let (model_url, json_url, preview_url) = get_abs_path(&config, &item.base_label, &item.path);
-        let mut info = String::new();
+
         let mut video_preview = None;
 
-        // Query for only one item
-        // if query_params.id.is_some() {
-        let info_str = fs::read_to_string(&json_url).await.unwrap_or_default();
-        let v: Value = serde_json::from_str(info_str.as_str()).unwrap_or_default();
+        let info = fs::read_to_string(&json_url).await.unwrap_or_default();
+        let v: Value = serde_json::from_str(info.as_str()).unwrap_or_default();
         if let Some(url) = v["images"][0]["url"].as_str() {
             if let Some(ext) = get_extension_from_url(url) {
                 let mut abs_preview = PathBuf::from(&model_url);
@@ -184,9 +176,6 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
                 }
             }
         }
-
-        info = info_str;
-        // }
 
         item_ids.insert(item.id);
 
@@ -204,7 +193,12 @@ async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Quer
     let tags = if item_ids.is_empty() {
         Vec::new()
     } else {
-        tag::list_tags(&db_pool.sqlite_pool, item_ids).await.unwrap_or_default()
+        tag::list_tags(&db_pool.sqlite_pool, item_ids)
+            .await
+            .unwrap_or_else(|e| {
+                error!("Failed to list tags: {e}");
+                Vec::new()
+            })
     };
 
     web::Json(SearchResponse {
@@ -246,11 +240,36 @@ async fn sync_civitai(config_data: Data<ConfigData>, db_pool: Data<DBPool>) -> i
 }
 
 #[get("saved_location")]
-async fn saved_location(config: Data<ConfigData>, query_params: Query<SavedLocationQuery>) -> impl Responder {
+async fn saved_location(
+    config: Data<ConfigData>,
+    db_pool: Data<DBPool>,
+    query_params: Query<SavedLocationQuery>,
+) -> impl Responder {
     let config = config.config.lock().await;
-    if let Some(path) = config.civitai.saved_location.get(&query_params.model_type) {
+
+    if let Some(blake3) = query_params.blake3.as_ref() {
+        if let Ok(item) = item::get_by_hash(&db_pool.sqlite_pool, blake3.to_lowercase().as_str()).await {
+            let (path, _, _) = get_abs_path(&config, &item.base_label, &item.path);
+            let path = PathBuf::from(path);
+            let path = path
+                .parent()
+                .unwrap_or(Path::new("."))
+                .to_str()
+                .unwrap_or_default()
+                .to_string();
+            return web::Json(SavedLocationResponse {
+                saved_location: path,
+                is_downloaded: true,
+            });
+        }
+    }
+
+    let model_type = query_params.model_type.to_lowercase();
+
+    if let Some(path) = config.civitai.saved_location.get(&model_type) {
         return web::Json(SavedLocationResponse {
             saved_location: path.clone(),
+            ..Default::default()
         });
     }
 
@@ -259,7 +278,8 @@ async fn saved_location(config: Data<ConfigData>, query_params: Query<SavedLocat
         base_path = path.clone();
     }
     web::Json(SavedLocationResponse {
-        saved_location: guess_saved_location(base_path.as_str(), &query_params.model_type),
+        saved_location: guess_saved_location(base_path.as_str(), &model_type),
+        ..Default::default()
     })
 }
 
@@ -297,7 +317,8 @@ async fn civitai_download(
         });
     }
 
-    if let Some(model_type) = params.model_type.clone() {
+    if let Some(model_type) = params.model_type.as_ref() {
+        let model_type = model_type.to_lowercase();
         config.civitai.saved_location.insert(model_type, params.dest.clone());
         let _ = config.save(&config_data.config_path, true);
     }
@@ -398,7 +419,10 @@ async fn update_item(db_pool: Data<DBPool>, data: web::Json<ItemUpdate>) -> impl
 async fn list_tags(db_pool: Data<DBPool>) -> impl Responder {
     let list_tags = tag::list_tags(&db_pool.sqlite_pool, HashSet::new())
         .await
-        .unwrap_or_default();
+        .unwrap_or_else(|e| {
+            error!("Failed to list tags: {e}");
+            Vec::new()
+        });
     web::Json(list_tags)
 }
 
@@ -427,35 +451,16 @@ async fn update_tag(db_pool: Data<DBPool>, data: web::Json<Tag>) -> impl Respond
 
 #[get("delete_tag")]
 async fn delete_tag(db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl Responder {
+    let mut err = String::new();
     for id in params.ids.iter() {
-        tag::delete(&db_pool.sqlite_pool, *id).await;
-    } // TODO: Err message
-    web::Json("")
-}
-
-#[get("check_downloaded")]
-async fn check_downloaded(db_pool: Data<DBPool>, params: Query<CheckDownloadedQuery>) -> impl Responder {
-    if params.blake3.is_empty() {
-        return web::Json(CommonResponse {
-            err: None,
-            ..Default::default()
-        });
+        if let Err(e) = tag::delete(&db_pool.sqlite_pool, *id).await {
+            err.push_str(&format!("{e}\n"));
+        }
     }
-
-    if item::get_by_hash(&db_pool.sqlite_pool, params.blake3.as_str())
-        .await
-        .is_ok()
-    {
-        web::Json(CommonResponse {
-            err: Some("Existed".to_string()),
-            ..Default::default()
-        })
-    } else {
-        web::Json(CommonResponse {
-            err: None,
-            ..Default::default()
-        })
-    }
+    web::Json(CommonResponse {
+        err: Some(err),
+        ..Default::default()
+    })
 }
 
 async fn move_to_dir(files: &[PathBuf], dir: &PathBuf) -> anyhow::Result<()> {
@@ -555,10 +560,27 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
     let v: Value = serde_json::from_str(&info).unwrap_or_default();
 
     let base_model = v["baseModel"].as_str().unwrap_or_default();
-    // TODO: Fix compare the real file hash
-    let blake3 = v["files"][0]["hashes"]["BLAKE3"].as_str().unwrap_or_default();
-    let file_metadata =
+
+    let mut blake3 = v["files"][0]["hashes"]["BLAKE3"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string()
+        .to_lowercase();
+    let mut file_metadata =
         serde_json::from_value::<CivitaiFileMetadata>(v["files"][0]["metadata"].clone()).unwrap_or_default();
+    if let Some(files) = v["files"].as_array() {
+        // If there are more than 1 file, find the metadata by hash
+        if files.len() > 1 {
+            blake3 = calculate_blake3(path).unwrap_or_default().to_lowercase();
+            for file in files.iter() {
+                let hash = file["hashes"]["BLAKE3"].as_str().unwrap_or_default().to_lowercase();
+                if blake3 == hash {
+                    file_metadata =
+                        serde_json::from_value::<CivitaiFileMetadata>(file["metadata"].clone()).unwrap_or_default();
+                }
+            }
+        }
+    }
     let model_info = serde_json::from_value::<CivitaiModel>(v["model"].clone()).unwrap_or_default();
     let name = path
         .file_name()
@@ -572,7 +594,7 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
         Some(name.as_str()),
         relative_path,
         label,
-        blake3,
+        blake3.as_str(),
         &model_info.name,
     )
     .await

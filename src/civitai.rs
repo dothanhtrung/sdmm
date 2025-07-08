@@ -85,7 +85,7 @@ pub async fn get_model_info(
     json_path.set_extension("json");
 
     if !json_path.exists() || config.overwrite_json {
-        let hash = blake3.unwrap_or(calculate_blake3_hash(path)?);
+        let hash = blake3.unwrap_or(calculate_blake3(path)?);
         let url = format!("https://civitai.com/api/v1/model-versions/by-hash/{hash}");
         info = client.get(url).headers(headers.clone()).send().await?.json().await?;
         save_info(&json_path, &info).await?;
@@ -163,7 +163,7 @@ async fn save_info(info_file: &Path, info: &Value) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn calculate_blake3_hash(file_path: &Path) -> std::io::Result<String> {
+pub fn calculate_blake3(file_path: &Path) -> std::io::Result<String> {
     let file = File::open(file_path)?;
     let mut reader = BufReader::new(file);
     let mut hasher = blake3::Hasher::new();
@@ -178,7 +178,7 @@ fn calculate_blake3_hash(file_path: &Path) -> std::io::Result<String> {
     }
 
     let result = hasher.finalize();
-    Ok(result.to_hex().to_string())
+    Ok(result.to_hex().to_string().to_lowercase())
 }
 
 fn generate_video_thumbnail(file_path: &Path, overwrite: bool) -> anyhow::Result<()> {

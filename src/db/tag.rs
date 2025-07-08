@@ -1,10 +1,10 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
 use crate::civitai::{CivitaiFileMetadata, CivitaiModel};
-use actix_web_lab::__reexports::futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Row, SqlitePool};
+use sqlx::{FromRow, SqlitePool};
 use std::collections::HashSet;
+use tracing::info;
 
 #[derive(Serialize, Deserialize, FromRow)]
 pub struct TagCount {
@@ -28,12 +28,12 @@ LEFT JOIN tag ON tag.id = tmp.dep WHERE tmp.name = ? GROUP BY tmp.id
 "#, name).fetch_one(pool).await
 }
 
-pub async fn add_tag(pool: &SqlitePool, name: &str) -> anyhow::Result<()> {
-    sqlx::query!("INSERT OR IGNORE INTO tag (name) VALUES (?)", name)
-        .execute(pool)
-        .await?;
-    Ok(())
-}
+// pub async fn add_tag(pool: &SqlitePool, name: &str) -> anyhow::Result<()> {
+//     sqlx::query!("INSERT OR IGNORE INTO tag (name) VALUES (?)", name)
+//         .execute(pool)
+//         .await?;
+//     Ok(())
+// }
 
 pub async fn delete(pool: &SqlitePool, id: i64) -> anyhow::Result<()> {
     sqlx::query!("DELETE FROM tag WHERE id = ?", id).execute(pool).await?;
@@ -199,16 +199,23 @@ pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<
         .fetch_all(pool)
         .await
     } else {
-        // TODO: Count all for index page
         let placeholders = vec!["?"; item_ids.len()].join(",");
         let sql = format!(
-            "SELECT tag.name as tag, COUNT(tag_item.tag) as count FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag \
-        LEFT JOIN item ON item.id = tag_item.item \
-        WHERE tag_item.item IN ({placeholders}) GROUP BY tag.name ORDER BY count DESC"
+            "SELECT name as tag, count
+            FROM (SELECT tag_item.tag as tag_id, tag.name as name, COUNT(tag_item.tag) as count FROM tag
+                LEFT JOIN tag_item ON tag.id = tag_item.tag
+                LEFT JOIN item ON item.id = tag_item.item
+                WHERE item.is_checked = true
+                GROUP BY tag.name)
+            JOIN tag_item ON tag_item.tag = tag_id
+            WHERE tag_item.item IN ({placeholders})
+            GROUP BY tag ORDER BY count DESC
+            "
         );
         let mut query = sqlx::query_as::<_, TagCount>(&sql);
         for id in item_ids {
             query = query.bind(id);
+            info!("ID: {id}");
         }
         query.fetch_all(pool).await
     }

@@ -73,7 +73,7 @@
     function handleDelete(id) {
         if (!confirm('Are you sure want to move this item to trash?')) return;
 
-        fetch(`/api/delete?id=${id}`)
+        fetch(`/api/delete_item?id=${id}`)
             .then(res => {
                 if (res.ok) {
                     window.location.href = "/"; // Redirect to homepage

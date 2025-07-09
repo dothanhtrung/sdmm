@@ -1,17 +1,19 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
-use crate::config::{CivitaiConfig, Config};
+use crate::api::TRASH_DIR;
+use crate::config::Config;
 use actix_web_lab::__reexports::futures_util::StreamExt;
 use jwalk::{Parallelism, WalkDir};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{to_string_pretty, Value};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::SystemTime;
 use tokio::fs;
 use tracing::{error, info};
 
@@ -63,7 +65,7 @@ pub async fn update_model_info(config: Config) -> anyhow::Result<()> {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
                     info!("Update model info: {}", entry.path().display());
-                    if let Err(e) = get_model_info(&path, &client, &headers, None, &config.civitai).await {
+                    if let Err(e) = get_model_info(&path, &client, &headers, None, &config).await {
                         error!("Failed to get model info: {}", e);
                     }
                 }
@@ -78,13 +80,13 @@ pub async fn get_model_info(
     client: &Client,
     headers: &HeaderMap,
     blake3: Option<String>,
-    config: &CivitaiConfig,
+    config: &Config,
 ) -> anyhow::Result<()> {
     let info: Value;
     let mut json_path = PathBuf::from(path);
     json_path.set_extension("json");
 
-    if !json_path.exists() || config.overwrite_json {
+    if !json_path.exists() || config.civitai.overwrite_json {
         let hash = blake3.unwrap_or(calculate_blake3(path)?);
         let url = format!("https://civitai.com/api/v1/model-versions/by-hash/{hash}");
         info = client.get(url).headers(headers.clone()).send().await?.json().await?;
@@ -104,10 +106,34 @@ pub async fn get_model_info(
     Ok(())
 }
 
-pub async fn download_file(url: &str, path: &Path, client: &Client, headers: &HeaderMap) -> anyhow::Result<()> {
+pub async fn download_file(
+    url: &str,
+    path: &Path,
+    client: &Client,
+    headers: &HeaderMap,
+    base_paths: &HashMap<String, String>,
+) -> anyhow::Result<()> {
+    if path.exists() {
+        let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_millis();
+        let mut trash_path = PathBuf::from(path.parent().unwrap_or(Path::new("."))).join(TRASH_DIR);
+        for (_, base_path) in base_paths.iter() {
+            if path.starts_with(base_path) {
+                trash_path = PathBuf::from(base_path).join(TRASH_DIR);
+            }
+        }
+        let mut new_name = PathBuf::from(path);
+        new_name.set_extension(format!(
+            "{}.bakup.{}",
+            path.extension().unwrap_or_default().to_str().unwrap_or_default(),
+            timestamp
+        ));
+        trash_path = trash_path.join(new_name.file_name().unwrap());
+        fs::rename(path, trash_path).await?;
+    }
+
+    let mut file = File::create(path)?;
     let response = client.get(url).headers(headers.clone()).send().await?;
     let mut stream = response.bytes_stream();
-    let mut file = File::create(path)?;
     while let Some(chunk_result) = stream.next().await {
         let chunk = chunk_result?;
         file.write_all(&chunk)?;
@@ -120,7 +146,7 @@ pub async fn download_file(url: &str, path: &Path, client: &Client, headers: &He
 async fn download_preview(
     client: &Client,
     headers: &HeaderMap,
-    config: &CivitaiConfig,
+    config: &Config,
     info: &Value,
     model_path: &Path,
 ) -> anyhow::Result<()> {
@@ -132,15 +158,15 @@ async fn download_preview(
                 preview_file.set_extension(extension);
 
                 let image_path = Path::new(&preview_file);
-                if image_path.exists() && !config.overwrite_thumbnail {
+                if image_path.exists() && !config.civitai.overwrite_thumbnail {
                     info!("File already exists: {}", image_path.display());
                 } else {
-                    download_file(url, image_path, client, headers).await?;
+                    download_file(url, image_path, client, headers, &config.model_paths).await?;
                 }
 
                 let file_type = file_type(image_path).await;
                 if file_type == FileType::Video {
-                    generate_video_thumbnail(&preview_file, config.overwrite_thumbnail)?;
+                    generate_video_thumbnail(&preview_file, config.civitai.overwrite_thumbnail)?;
                 } else if file_type == FileType::Image {
                     //  Change preview image extension to jpeg for easier to manage
                     if image_path.extension().unwrap_or_default() != PREVIEW_EXT {

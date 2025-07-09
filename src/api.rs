@@ -23,7 +23,7 @@ use std::path::{Path, PathBuf};
 use tokio::fs;
 use tracing::{error, info};
 
-const TRASH_DIR: &str = ".trash";
+pub const TRASH_DIR: &str = ".trash";
 
 pub fn scope_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -31,7 +31,7 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
             .service(get)
             .service(scan_folder)
             .service(remove_orphan)
-            .service(delete)
+            .service(delete_item)
             .service(empty_trash)
             .service(search)
             .service(update_item)
@@ -332,13 +332,11 @@ async fn civitai_download(
     rt::spawn(async move {
         info!("Downloading file {}: {}", params.name, params.url);
         // TODO: Verify checksum of downloaded file
-        if let Err(e) = download_file(params.url.as_str(), &path, &client, &headers).await {
+        if let Err(e) = download_file(params.url.as_str(), &path, &client, &headers, &config.model_paths).await {
             error!("Failed to download file: {}", e);
         }
 
-        if let Err(e) =
-            civitai::get_model_info(&path, &client, &headers, Some(params.blake3.clone()), &config.civitai).await
-        {
+        if let Err(e) = civitai::get_model_info(&path, &client, &headers, Some(params.blake3.clone()), &config).await {
             error!("Failed to get model info: {}", e);
         }
 
@@ -357,8 +355,8 @@ async fn civitai_download(
     })
 }
 
-#[get("delete")]
-async fn delete(config: Data<ConfigData>, db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl Responder {
+#[get("delete_item")]
+async fn delete_item(config: Data<ConfigData>, db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl Responder {
     let config = config.config.lock().await;
     for id in params.ids.iter() {
         let Ok((rel_path, label)) = item::mark_obsolete(&db_pool.sqlite_pool, *id).await else {

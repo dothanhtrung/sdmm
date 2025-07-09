@@ -1,0 +1,261 @@
+{% include "partial/header.html" %}
+
+<div class="px-10 py-8 text-white">
+    <h1 class="text-2xl font-bold mb-6">Configuration</h1>
+
+    <form id="configForm" class="space-y-6">
+        <div class="border border-gray-600 rounded p-4">
+            <div>
+                <label class="block font-semibold mb-2">DB Path</label>
+                <input type="text" name="db.sqlite.db_path"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+        </div>
+
+        <div class="border border-gray-600 rounded p-4">
+            <label class="block font-semibold mb-2">Model Paths</label>
+            <div id="modelPathsContainer" class="space-y-2"></div>
+            <button type="button" onclick="addModelPathField()"
+                    class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Path
+            </button>
+
+            <div>
+                <label class="block font-semibold mb-2">Walkdir Parallel</label>
+                <input type="number" name="walkdir_parallel"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-2">Extensions</label>
+                <div id="extensionsContainer" class="space-y-2"></div>
+                <button type="button" onclick="addExtensionField()"
+                        class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Extension
+                </button>
+            </div>
+        </div>
+
+        <div class="border border-gray-600 rounded p-4">
+            <div>
+                <label class="block font-semibold mb-2">Civitai API Key</label>
+                <input type="text" name="civitai.api_key"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="overwrite_thumbnail" name="civitai.overwrite_thumbnail"/>
+                <label for="overwrite_thumbnail">Overwrite Thumbnail</label>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="overwrite_json" name="civitai.overwrite_json"/>
+                <label for="overwrite_json">Overwrite JSON</label>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-2">Civitai Saved Locations</label>
+                <div id="civitaiPathsContainer" class="space-y-2"></div>
+                <button type="button" onclick="addCivitaiPathField()"
+                        class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Location
+                </button>
+            </div>
+        </div>
+
+        <div class="border border-gray-600 rounded p-4">
+            <div>
+                <label class="block font-semibold mb-2">Listen Address</label>
+                <input type="text" name="listen_addr"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-2">Listen Port</label>
+                <input type="number" name="listen_port"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+
+            <div>
+                <label class="block font-semibold mb-2">API Per Page</label>
+                <input type="number" name="api.per_page"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+        </div>
+
+
+        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded">Save</button>
+    </form>
+
+    <p id="statusMsg" class="mt-4 text-green-400 hidden">Successfully saved. Reloading...</p>
+</div>
+
+<script>
+    async function loadConfig() {
+        const res = await fetch("/api/get_config");
+        const config = await res.json();
+
+        document.querySelector('[name="db.sqlite.db_path"]').value = config.db.sqlite.db_path || "";
+        document.querySelector('[name="civitai.api_key"]').value = config.civitai.api_key || "";
+        document.querySelector('[name="listen_addr"]').value = config.listen_addr || "";
+        document.querySelector('[name="listen_port"]').value = config.listen_port || 0;
+        document.querySelector('[name="api.per_page"]').value = config.api.per_page || 0;
+        document.querySelector('[name="walkdir_parallel"]').value = config.walkdir_parallel || 0;
+        document.getElementById("overwrite_thumbnail").checked = config.civitai.overwrite_thumbnail || false;
+        document.getElementById("overwrite_json").checked = config.civitai.overwrite_json || false;
+
+        (config.extensions || []).forEach(ext => addExtensionField(ext));
+
+        const paths = config.model_paths || {};
+        for (const label in paths) {
+            addModelPathField(label, paths[label]);
+        }
+
+        const civPaths = config.civitai.saved_location || {};
+        for (const label in civPaths) {
+            addCivitaiPathField(label, civPaths[label]);
+        }
+    }
+
+    function addModelPathField(label = "", path = "") {
+        const container = document.getElementById("modelPathsContainer");
+        const row = document.createElement("div");
+        row.className = "flex gap-2 items-center";
+
+        const labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.placeholder = "Label";
+        labelInput.className = "w-1/5 bg-gray-800 border border-gray-600 px-2 py-1 rounded";
+
+        const pathInput = document.createElement("input");
+        pathInput.type = "text";
+        pathInput.placeholder = "Path";
+        pathInput.className = "w-4/5 bg-gray-800 border border-gray-600 px-2 py-1 rounded";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "-";
+        removeBtn.className = "bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded";
+        removeBtn.onclick = () => row.remove();
+
+        labelInput.value = label;
+        pathInput.value = path;
+
+        row.append(labelInput, pathInput, removeBtn);
+        container.appendChild(row);
+    }
+
+    function addCivitaiPathField(label = "", path = "") {
+        const container = document.getElementById("civitaiPathsContainer");
+        const row = document.createElement("div");
+        row.className = "flex gap-2 items-center";
+
+        const labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.placeholder = "Label";
+        labelInput.className = "w-1/5 bg-gray-800 border border-gray-600 px-2 py-1 rounded";
+
+        const pathInput = document.createElement("input");
+        pathInput.type = "text";
+        pathInput.placeholder = "Path";
+        pathInput.className = "w-4/5 bg-gray-800 border border-gray-600 px-2 py-1 rounded";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "-";
+        removeBtn.className = "bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded";
+        removeBtn.onclick = () => row.remove();
+
+        labelInput.value = label;
+        pathInput.value = path;
+
+        row.append(labelInput, pathInput, removeBtn);
+        container.appendChild(row);
+    }
+
+    function addExtensionField(ext = "") {
+        const container = document.getElementById("extensionsContainer");
+        const row = document.createElement("div");
+        row.className = "flex gap-2 items-center";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = ext;
+        input.placeholder = "Extension";
+        input.className = "flex-grow bg-gray-800 border border-gray-600 px-3 py-1 rounded";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.textContent = "-";
+        removeBtn.className = "bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded";
+        removeBtn.onclick = () => row.remove();
+
+        row.append(input, removeBtn);
+        container.appendChild(row);
+    }
+
+    document.getElementById("configForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const form = e.target;
+        const config = {
+            db: {
+                init_timeout_secs: parseInt(form["db.init_timeout_secs"].value),
+                sqlite: {
+                    db_path: form["db.sqlite.db_path"].value,
+                },
+            },
+            model_paths: {},
+            civitai: {
+                api_key: form["civitai.api_key"].value,
+                overwrite_thumbnail: form["civitai.overwrite_thumbnail"].checked,
+                overwrite_json: form["civitai.overwrite_json"].checked,
+                saved_location: {},
+            },
+            listen_addr: form["listen_addr"].value,
+            listen_port: parseInt(form["listen_port"].value),
+            api: {
+                per_page: parseInt(form["api.per_page"].value),
+            },
+            walkdir_parallel: parseInt(form["walkdir_parallel"].value),
+            extensions: [],
+        };
+
+        const pathFields = document.getElementById("modelPathsContainer").querySelectorAll("div");
+        pathFields.forEach(div => {
+            const [labelInput, pathInput] = div.querySelectorAll("input");
+            if (labelInput.value && pathInput.value) {
+                config.model_paths[labelInput.value] = pathInput.value;
+            }
+        });
+
+        const civFields = document.getElementById("civitaiPathsContainer").querySelectorAll("div");
+        civFields.forEach(div => {
+            const [labelInput, pathInput] = div.querySelectorAll("input");
+            if (labelInput.value && pathInput.value) {
+                config.civitai.saved_location[labelInput.value] = pathInput.value;
+            }
+        });
+
+        const extInputs = document.getElementById("extensionsContainer").querySelectorAll("input");
+        extInputs.forEach(input => {
+            if (input.value.trim()) {
+                config.extensions.push(input.value.trim());
+            }
+        });
+
+        const res = await fetch("/api/update_config", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(config),
+        });
+
+        if (res.ok) {
+            document.getElementById("statusMsg").classList.remove("hidden");
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert("Failed to save config");
+        }
+    });
+
+    loadConfig();
+</script>
+
+{% include "partial/footer.html" %}

@@ -11,8 +11,6 @@ use tracing::log::info;
 const DEFAULT_LISTEN_ADDR: &str = "0.0.0.0";
 const DEFAULT_LISTEN_PORT: u32 = 9696;
 
-const DEFAULT_DB_INIT_TIMEOUT_SEC: u64 = 5;
-
 const DEFAULT_SQLITE_PATH: &str = "sdmm.sqlite";
 
 const DEFAULT_API_PER_PAGE: u32 = 20;
@@ -30,19 +28,9 @@ impl Default for SQLiteConfig {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct DBConfig {
-    pub init_timeout_secs: u64,
     pub sqlite: SQLiteConfig,
-}
-
-impl Default for DBConfig {
-    fn default() -> Self {
-        Self {
-            init_timeout_secs: DEFAULT_DB_INIT_TIMEOUT_SEC,
-            sqlite: SQLiteConfig::default(),
-        }
-    }
 }
 
 #[derive(Clone, Deserialize, Debug, Serialize)]

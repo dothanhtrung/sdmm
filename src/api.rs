@@ -41,6 +41,8 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
             .service(get_tag)
             .service(update_tag)
             .service(delete_tag)
+            .service(get_config)
+            .service(update_config)
             .service(sync_civitai),
     );
 }
@@ -460,6 +462,29 @@ async fn delete_tag(db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl
         err: Some(err),
         ..Default::default()
     })
+}
+
+#[get("get_config")]
+async fn get_config(config_data: Data<ConfigData>) -> impl Responder {
+    let config = (*config_data.config.lock().await).clone();
+    web::Json(config)
+}
+
+#[post("update_config")]
+async fn update_config(config_data: Data<ConfigData>, data: web::Json<Config>) -> impl Responder {
+    let mut config = config_data.config.lock().await;
+    *config = data.into_inner();
+    if let Err(e) = config.save(&config_data.config_path, true) {
+        web::Json(CommonResponse {
+            err: Some(format!("Failed to save config: {e}")),
+            ..Default::default()
+        })
+    } else {
+        web::Json(CommonResponse {
+            msg: "Config updated".to_string(),
+            ..Default::default()
+        })
+    }
 }
 
 async fn move_to_dir(files: &[PathBuf], dir: &PathBuf) -> anyhow::Result<()> {

@@ -16,6 +16,7 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
         .service(maintenance)
         .service(civitai)
         .service(tag)
+        .service(setting)
         .service(Files::new(
             "/assets",
             concat!(env!("CARGO_MANIFEST_DIR"), "/res/assets"),
@@ -77,5 +78,12 @@ async fn tag(tmpl: Data<Tera>) -> impl Responder {
         .render("tag.html", &ctx)
         .map_err(|e| error::ErrorInternalServerError(format!("Template error: {e:?}")))
         .unwrap_or_default();
+    HttpResponse::Ok().content_type("text/html").body(template)
+}
+
+#[get("/setting")]
+async fn setting(tmpl: Data<Tera>) -> impl Responder {
+    let ctx = tera::Context::new();
+    let template = tmpl.render("config.html", &ctx).unwrap_or_default();
     HttpResponse::Ok().content_type("text/html").body(template)
 }

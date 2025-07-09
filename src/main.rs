@@ -33,10 +33,7 @@ use anyhow::anyhow;
 use clap::Parser;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
-use tokio::time::sleep;
-use tracing::error;
 use tracing_subscriber::EnvFilter;
 
 const BASE_PATH_PREFIX: &str = "base_";
@@ -90,22 +87,12 @@ async fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let db_pool;
-    loop {
-        match DBPool::init(&config.db).await {
-            Ok(pool) => {
-                db_pool = pool;
-                break;
-            }
-            Err(e) => {
-                error!(
-                    "Failed to init DB Pool: {}. Retry in {} seconds",
-                    e, config.db.init_timeout_secs
-                );
-                sleep(Duration::from_secs(config.db.init_timeout_secs)).await;
-            }
+    let db_pool = match DBPool::init(&config.db).await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Err(anyhow!("Failed to connect database: {}.", e,));
         }
-    }
+    };
 
     let listen_addr = format!("{}:{}", &config.listen_addr, &config.listen_port);
     let model_paths = config.model_paths.clone();

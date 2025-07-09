@@ -197,7 +197,6 @@
         const form = e.target;
         const config = {
             db: {
-                init_timeout_secs: parseInt(form["db.init_timeout_secs"].value),
                 sqlite: {
                     db_path: form["db.sqlite.db_path"].value,
                 },
@@ -247,11 +246,29 @@
             body: JSON.stringify(config),
         });
 
+        const stt = document.getElementById("statusMsg");
         if (res.ok) {
-            document.getElementById("statusMsg").classList.remove("hidden");
-            setTimeout(() => location.reload(), 1000);
+            let res_json = await res.json();
+            if (res_json.err) {
+                stt.classList.remove("hidden");
+                stt.classList.remove("text-green-400");
+                stt.classList.remove("text-red-400");
+                stt.classList.add("text-red-400");
+                stt.textContent = res_json.err;
+            } else {
+                stt.textContent = "Successfully saved. Reload.";
+                stt.classList.remove("hidden");
+                stt.classList.remove("text-green-400");
+                stt.classList.remove("text-red-400");
+                stt.classList.add("text-green-400");
+                setTimeout(() => location.reload(), 1000);
+            }
         } else {
-            alert("Failed to save config");
+            stt.classList.remove("hidden");
+            stt.classList.remove("text-green-400");
+            stt.classList.remove("text-red-400");
+            stt.classList.add("text-red-400");
+            stt.textContent = "Failed to save: " + res.statusText;
         }
     });
 

@@ -22,12 +22,20 @@
                 <!-- Left: Details -->
                 <div class="px-2 space-y-3 w-full order-2 md:order-1">
                     <div><span id="item-name" class="font-bold text-2xl"></span></div>
-                    <div><strong class="text-purple-400">Model name:</strong> <span id="item-model"></span></div>
-                    <div><strong class="text-purple-400">Path:</strong><br><span id="item-path"
-                                                                                 class="break-all"></span>
+                    <div><strong class="text-purple-400">Model name:</strong>
+                        <div class="border border-gray-800">
+                            <span id="item-model"></span>
+                        </div>
                     </div>
-                    <div><strong class="text-purple-400">Trained Words:</strong><br><span id="item-trained-words"
-                                                                                          class="break-all"></span>
+                    <div><strong class="text-purple-400">Path:</strong><br>
+                        <div class="border border-gray-800">
+                            <span id="item-path" class="break-all"></span>
+                        </div>
+                    </div>
+                    <div><strong class="text-purple-400">Trained Words:</strong><br>
+                        <div class="border border-gray-800">
+                            <span id="item-trained-words" class="break-all"></span>
+                        </div>
                     </div>
 
                     <div>
@@ -44,8 +52,10 @@
                         </button>
                     </div>
 
-                    <div><strong class="text-purple-400">Civitai:</strong><br><a id="item-civitai"
-                                                                                    class="break-all"></a>
+                    <div><strong class="text-purple-400">Civitai:</strong><br>
+                        <div class="border border-gray-800">
+                            <a id="item-civitai" class="break-all text-green-300"></a>
+                        </div>
                     </div>
 
                     <div>
@@ -56,9 +66,15 @@
                 </div>
 
                 <div class="md:order-2 order-1">
-                    <video id="item-video" controls class="w-full rounded shadow border border-gray-700 hidden"></video>
-                    <img id="item-preview" src="" alt="Preview"
-                         class="w-full rounded shadow border border-gray-700 hidden">
+                    <div>
+                        <video id="item-video" controls
+                               class="w-full rounded shadow border border-gray-700 hidden"></video>
+                        <img id="item-preview" src="" alt="Preview"
+                             class="w-full rounded shadow border border-gray-700 hidden">
+                    </div>
+                    <div>
+<!--                        TODO: Show image meta-->
+                    </div>
                 </div>
 
             </div>

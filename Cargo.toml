@@ -28,7 +28,7 @@ reqwest = { version = "0.12", features = ["blocking", "json", "stream"] }
 dotenvy = "0.15"
 infer = "0.19"
 
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
 tikv-jemallocator = "0.6"
 
 [features]

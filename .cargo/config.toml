@@ -4,3 +4,14 @@ rustc-wrapper = "sccache"
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "link-arg=-O3"]
+
+[target.x86_64-pc-windows-msvc]
+linker = "lld"
+rustflags = [
+    "-Lnative=/home/trungdt/.xwin/crt/lib/x86_64",
+    "-Lnative=/home/trungdt/.xwin/sdk/lib/um/x86_64",
+    "-Lnative=/home/trungdt/.xwin/sdk/lib/ucrt/x86_64"
+]

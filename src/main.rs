@@ -6,14 +6,13 @@
 //! * Create folder and move model
 //! * Browsing and download model from Civitai
 //!   * Support more filters
-//! * Download new version of model from Civitai
 //! * Duplicate check
 //! * Setting page
 
-#[cfg(not(target_env = "msvc"))]
+#[cfg(target_os = "linux")]
 use tikv_jemallocator::Jemalloc;
 
-#[cfg(not(target_env = "msvc"))]
+#[cfg(target_os = "linux")]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 

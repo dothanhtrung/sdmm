@@ -174,23 +174,23 @@
         const container = document.getElementById("versionContent");
         container.innerHTML = "";
 
-        const imageContainer = document.createElement("div");
-        imageContainer.className = "flex gap-2 overflow-x-auto mb-4";
-        version.images?.forEach(img => {
-            const image = document.createElement("img");
-            image.src = img.url;
-            image.className = "h-40 rounded border border-gray-700";
-            imageContainer.appendChild(image);
-        });
-        container.appendChild(imageContainer);
-
         for (const file of version.files || []) {
             const fileInfo = document.createElement("div");
             const fileName = document.createElement("strong");
             fileName.className = "px-2"
             fileName.textContent = file.name;
             const fileSize = document.createElement("span");
-            fileSize.textContent = ((file.sizeKB || 0.0) / 1024.0).toFixed(2) + " MB";
+            let fileSizeDisp = file.sizeKB || 0;
+            let fileSizeUnit = " KB";
+            if (fileSizeDisp > 1024.0) {
+                fileSizeDisp /= 1024.0;
+                fileSizeUnit = " MB";
+            }
+            if (fileSizeDisp > 1024.0) {
+                fileSizeDisp /= 1024.0;
+                fileSizeUnit = " GB";
+            }
+            fileSize.textContent = fileSizeDisp.toFixed(2) + fileSizeUnit;
             fileInfo.appendChild(fileName);
             fileInfo.appendChild(fileSize);
 
@@ -237,6 +237,28 @@
             container.appendChild(document.createElement("br"));
             container.appendChild(document.createElement("br"));
         }
+
+        const previewWrapper = document.createElement("div");
+        previewWrapper.className = "flex flex-col gap-2 mb-6";
+        // Main image area
+        const mainImage = document.createElement("img");
+        mainImage.className = "w-full max-h-[500px] object-contain rounded border border-gray-700 bg-black";
+        mainImage.src = version.images?.[0]?.url || ""; // default to first image
+        // Thumbnail row
+        const thumbnailRow = document.createElement("div");
+        thumbnailRow.className = "flex gap-2 overflow-x-auto";
+        version.images?.forEach(img => {
+            const thumb = document.createElement("img");
+            thumb.src = img.url;
+            thumb.className = "h-20 w-auto rounded border border-gray-600 cursor-pointer hover:border-purple-400";
+            thumb.addEventListener("click", () => {
+                mainImage.src = img.url;
+            });
+            thumbnailRow.appendChild(thumb);
+        });
+        previewWrapper.appendChild(mainImage);
+        previewWrapper.appendChild(thumbnailRow);
+        container.appendChild(previewWrapper);
     }
 
     document.getElementById("searchForm").addEventListener("submit", function (e) {

@@ -13,7 +13,7 @@ use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tokio::fs;
-use tracing::info;
+use tracing::{error, info};
 
 pub const PREVIEW_EXT: &str = "jpeg";
 
@@ -64,7 +64,7 @@ pub async fn update_model_info(config: Config) -> anyhow::Result<()> {
                 if valid_ext.contains(&file_ext.to_string()) {
                     info!("Update model info: {}", entry.path().display());
                     if let Err(e) = get_model_info(&path, &client, &headers, None, &config.civitai).await {
-                        info!("Error: {}", e);
+                        error!("Failed to get model info: {}", e);
                     }
                 }
             }

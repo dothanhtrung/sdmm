@@ -28,10 +28,13 @@ Run the web server:
 ```shell
 ./sdmm -c ./path/to/config.ron
 ```
-Note: Put the [res](./res) folder in same directory with binary `sdmm`.
 
-How to build
-------------
+> Note: Put the [res](./res) folder in same directory with binary `sdmm`.
+
+Install
+-------
+
+Get the prebuilt binary in Release page or build it with `cargo`.
 
 Build the application:
 ```shell

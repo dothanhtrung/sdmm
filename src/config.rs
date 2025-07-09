@@ -63,6 +63,7 @@ pub struct CivitaiConfig {
     pub api_key: String,
     pub overwrite_thumbnail: bool,
     pub overwrite_json: bool,
+    #[serde(default)]
     pub saved_location: HashMap<String, String>,
 }
 
@@ -71,7 +72,7 @@ impl Default for CivitaiConfig {
         Self {
             api_key: "your_civitai_api_key".to_string(),
             overwrite_thumbnail: false,
-            overwrite_json: true,
+            overwrite_json: false,
             saved_location: HashMap::new(),
         }
     }
@@ -82,10 +83,14 @@ pub struct Config {
     pub db: DBConfig,
     pub model_paths: HashMap<String, String>,
     pub civitai: CivitaiConfig,
+    #[serde(default)]
     pub listen_addr: String,
+    #[serde(default)]
     pub listen_port: u32,
     pub api: APIConfig,
+    #[serde(default)]
     pub walkdir_parallel: usize,
+    #[serde(default)]
     pub extensions: Vec<String>,
 }
 
@@ -114,7 +119,8 @@ impl Config {
     /// Load config from file
     pub fn load(config_path: &Path) -> anyhow::Result<Self> {
         let file = File::open(config_path)?;
-        ron::de::from_reader(file).map_err(|e| anyhow::anyhow!(e))
+        let config = ron::de::from_reader(file)?;
+        Ok(config)
     }
 
     /// Save config to file

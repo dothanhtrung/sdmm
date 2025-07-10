@@ -72,9 +72,54 @@
                         <img id="item-preview" src="" alt="Preview"
                              class="w-full rounded shadow border border-gray-700 hidden">
                     </div>
-                    <div>
-<!--                        TODO: Show image meta-->
+
+                    <div id="image-meta" class="mt-4">
+                        <h3 class="text-lg font-bold mb-2 text-purple-400">Image Generation Info</h3>
+                        <div class="bg-gray-900 p-3 rounded border border-gray-800 space-y-2 text-sm">
+                            <div id="meta-model" class="">
+                                <span class="text-purple-300 font-semibold">Model:</span>
+                                <span id="meta-model-value"></span>
+                            </div>
+                            <div id="meta-size" class="">
+                                <span class="text-purple-300 font-semibold">Size:</span>
+                                <span id="meta-size-value"></span>
+                            </div>
+                            <div id="meta-cfg" class="">
+                                <span class="text-purple-300 font-semibold">CFG Scale:</span>
+                                <span id="meta-cfg-value"></span>
+                            </div>
+                            <div id="meta-clip" class="">
+                                <span class="text-purple-300 font-semibold">CLIP Skip:</span>
+                                <span id="meta-clip-value"></span>
+                            </div>
+                            <div id="meta-sampler" class="">
+                                <span class="text-purple-300 font-semibold">Sampler:</span>
+                                <span id="meta-sampler-value"></span>
+                            </div>
+                            <div id="meta-steps" class="">
+                                <span class="text-purple-300 font-semibold">Steps:</span>
+                                <span id="meta-steps-value"></span>
+                            </div>
+                            <div id="meta-seed" class="">
+                                <span class="text-purple-300 font-semibold">Seed:</span>
+                                <span id="meta-seed-value"></span>
+                            </div>
+                            <div id="meta-prompt" class="">
+                                <span class="text-purple-300 font-semibold">Prompt:</span>
+                                <div class="mt-1 p-2 bg-gray-800 rounded text-gray-200">
+                                    <span id="meta-prompt-value"></span>
+                                </div>
+                            </div>
+                            <div id="meta-negative" class="">
+                                <span class="text-purple-300 font-semibold">Negative Prompt:</span>
+                                <div class="mt-1 p-2 bg-gray-800 rounded text-gray-200">
+                                    <span id="meta-negative-value"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+
                 </div>
 
             </div>
@@ -142,6 +187,8 @@
                 vid_preview.classList.add("hidden");
             }
 
+            displayImageMeta(info);
+
             display_tag(tags);
             const tagEditBox = document.getElementById("item-tags-edit");
             (tags || []).forEach(tag => {
@@ -152,6 +199,40 @@
             document.getElementById("item-info").textContent = formatJson(item.info);
 
         });
+
+        function displayImageMeta(info) {
+            const imageMeta = info.images[0].meta;
+            if (!imageMeta) return;
+
+            const metaContainer = document.getElementById("image-meta");
+            let hasMetaData = false;
+
+            // Helper function to set metadata field
+            function setMetaField(fieldId, valueId, value) {
+                if (value !== undefined && value !== null && value !== "") {
+                    document.getElementById(fieldId).classList.remove("hidden");
+                    document.getElementById(valueId).textContent = value;
+                    hasMetaData = true;
+                }
+            }
+
+            // Set each metadata field
+            setMetaField("meta-model", "meta-model-value", imageMeta.Model);
+            setMetaField("meta-size", "meta-size-value", imageMeta.Size);
+            setMetaField("meta-cfg", "meta-cfg-value", imageMeta.cfgScale);
+            setMetaField("meta-clip", "meta-clip-value", imageMeta.clipSkip);
+            setMetaField("meta-sampler", "meta-sampler-value", imageMeta.sampler);
+            setMetaField("meta-steps", "meta-steps-value", imageMeta.steps);
+            setMetaField("meta-seed", "meta-seed-value", imageMeta.seed);
+            setMetaField("meta-prompt", "meta-prompt-value", imageMeta.prompt);
+            setMetaField("meta-negative", "meta-negative-value", imageMeta.negativePrompt);
+
+            // Show the metadata container if we have any data
+            if (hasMetaData) {
+                metaContainer.classList.remove("hidden");
+            }
+        }
+
 
         function formatJson(infoStr) {
             try {

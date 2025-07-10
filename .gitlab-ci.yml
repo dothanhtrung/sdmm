@@ -27,3 +27,19 @@ check:
         - src/**/*
         - examples/**/*
         - tests/**/*
+
+release_build:
+  stage: build
+  script:
+    - rustc --version && cargo --version
+    - cargo build --release
+    - mkdir -p sddm/res
+    - cp target/release/sdmm sdmm/
+    - cp -r res/html sdmm/res/
+    - cp -r res/css sdmm/res/
+  rules:
+    - if: '$CI_COMMIT_TAG'   # Only run on tag
+  artifacts:
+    name: "$CI_PROJECT_NAME-$CI_COMMIT_TAG"
+    paths:
+      - sdmm

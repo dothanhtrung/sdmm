@@ -17,8 +17,8 @@
         {% include "partial/loading.html" %}
 
 
-        <div id="item-content" class="px-2 space-y-6 order-1 md:order-2">
-            <div class="grid sm:grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
+        <div id="item-content" class="px-2 space-y-6 order-1 md:order-2 w-full">
+            <div class="grid sm:grid-cols-1 md:grid-cols-[2fr_1fr] gap-6 w-full">
                 <!-- Left: Details -->
                 <div class="px-2 space-y-3 w-full order-2 md:order-1">
                     <div><span id="item-name" class="font-bold text-2xl"></span></div>
@@ -65,8 +65,8 @@
                     </div>
                 </div>
 
-                <div class="md:order-2 order-1">
-                    <div>
+                <div class="md:order-2 order-1 w-full">
+                    <div class="w-full">
                         <video id="item-video" controls
                                class="w-full rounded shadow border border-gray-700 hidden"></video>
                         <img id="item-preview" src="" alt="Preview"

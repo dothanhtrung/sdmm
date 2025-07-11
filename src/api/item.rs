@@ -20,7 +20,7 @@ use tracing::{error, info};
 pub fn scope(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/item")
-            .service(get_item)
+            .service(get_items)
             .service(saved_location)
             .service(civitai_download)
             .service(delete)
@@ -76,7 +76,11 @@ struct CivitaiDownloadQuery {
 }
 
 #[get("")]
-async fn get_item(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Query<SearchQuery>) -> impl Responder {
+async fn get_items(
+    config: Data<ConfigData>,
+    db_pool: Data<DBPool>,
+    query_params: Query<SearchQuery>,
+) -> impl Responder {
     let config = config.config.read().await;
     let page = max(1, query_params.page.unwrap_or(1)) - 1;
     let limit = max(0, query_params.count.unwrap_or(config.api.per_page as i64));
@@ -113,7 +117,7 @@ async fn get_item(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params:
 
     let mut item_ids = HashSet::new();
     for item in items {
-        let (model_url, json_url, preview_url) = get_abs_path(&config, &item.base_label, &item.path);
+        let (model_url, json_url, mut preview_url) = get_abs_path(&config, &item.base_label, &item.path);
 
         let mut video_preview = None;
 
@@ -131,6 +135,11 @@ async fn get_item(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params:
                     }
                 }
             }
+        }
+        let mut abs_preview = PathBuf::from(&model_url);
+        abs_preview.set_extension(PREVIEW_EXT);
+        if !abs_preview.exists() {
+            preview_url.clear();
         }
 
         item_ids.insert(item.id);

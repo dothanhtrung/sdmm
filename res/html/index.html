@@ -117,9 +117,19 @@
                     info = {};
                 }
                 const modelType = info?.model?.type || "";
+                let preview_tag = `<img src="/assets/no_image.png" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">`;
+                if (item.preview !== "") {
+                     preview_tag = `<img src="${item.preview}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">`;
+                } else {
+                    const video_preview = item.video_preview || "";
+                    if (video_preview !== "") {
+                        preview_tag = `<video src="${item.video_preview}" muted controls class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">
+                                            Your browser does not support the video tag.</video>`
+                    }
+                }
                 card.innerHTML = `
                     <a href="/item/${item.id}">
-                        <img src="${item.preview}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">
+                        ${preview_tag}
                         <div class="absolute top-0 left-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">${modelType}</div>
                     </a>
                     <div class="p-4 flex flex-row gap-2">

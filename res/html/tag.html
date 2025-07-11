@@ -66,9 +66,29 @@
                 body: JSON.stringify(body)
             });
 
-            const postJson = await postRes.json();
-            document.getElementById("save-status").textContent = postJson.msg;
-            document.getElementById("save-status").classList.remove("hidden");
+            const stt = document.getElementById("save-status");
+            if (postRes.ok) {
+                let res_json = await postRes.json();
+                if (res_json.err) {
+                    stt.classList.remove("hidden");
+                    stt.classList.remove("text-green-400");
+                    stt.classList.remove("text-red-400");
+                    stt.classList.add("text-red-400");
+                    stt.textContent = res_json.err;
+                } else {
+                    stt.textContent = "Successfully saved.";
+                    stt.classList.remove("hidden");
+                    stt.classList.remove("text-green-400");
+                    stt.classList.remove("text-red-400");
+                    stt.classList.add("text-green-400");
+                }
+            } else {
+                stt.classList.remove("hidden");
+                stt.classList.remove("text-green-400");
+                stt.classList.remove("text-red-400");
+                stt.classList.add("text-red-400");
+                stt.textContent = "Failed to save: " + postRes.statusText;
+            }
         });
     });
 

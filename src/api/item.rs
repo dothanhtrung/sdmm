@@ -225,16 +225,9 @@ async fn civitai_download(
     params: Query<CivitaiDownloadQuery>,
 ) -> impl Responder {
     let mut config = config_data.config.write().await.clone();
-    let mut path = PathBuf::from(&params.dest);
+    let dest_dir = PathBuf::from(&params.dest);
 
-    if let Err(e) = fs::create_dir_all(&path).await {
-        return web::Json(CommonResponse {
-            err: Some(format!("Failed to create {path:?}: {e}")),
-            ..Default::default()
-        });
-    }
-
-    path = path.join(&params.name);
+    let path = dest_dir.join(&params.name);
     let mut is_inside_base_path = false;
     for (_, base_path) in config.model_paths.iter() {
         let parent = PathBuf::from(base_path);
@@ -248,6 +241,13 @@ async fn civitai_download(
         error!("Destination path {} must be inside base path", path.display());
         return web::Json(CommonResponse {
             err: Some("Destination path must be inside base path".to_string()),
+            ..Default::default()
+        });
+    }
+
+    if let Err(e) = fs::create_dir_all(&dest_dir).await {
+        return web::Json(CommonResponse {
+            err: Some(format!("Failed to create {dest_dir:?}: {e}")),
             ..Default::default()
         });
     }
@@ -269,10 +269,12 @@ async fn civitai_download(
         // TODO: Verify checksum of downloaded file
         if let Err(e) = download_file(params.url.as_str(), &path, &client, &headers, &config.model_paths).await {
             error!("Failed to download file: {}", e);
+            return;
         }
 
         if let Err(e) = get_model_info(&path, &client, &headers, Some(params.blake3.clone()), &config).await {
             error!("Failed to get model info: {}", e);
+            return;
         }
 
         for (label, base_path) in config.model_paths.iter() {

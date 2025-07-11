@@ -140,7 +140,7 @@ pub async fn download_file(
             path.extension().unwrap_or_default().to_str().unwrap_or_default(),
             timestamp
         ));
-        trash_path = trash_path.join(new_name.file_name().unwrap());
+        trash_path = trash_path.join(new_name.file_name().unwrap_or_default());
         fs::rename(path, trash_path).await?;
     }
 

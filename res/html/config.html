@@ -6,27 +6,27 @@
     <form id="configForm" class="space-y-6">
         <div class="border border-gray-600 rounded p-4">
             <div>
-                <label class="block font-semibold mb-2">DB Path</label>
+                <label class="block font-semibold mb-2">Database File</label>
                 <input type="text" name="db.sqlite.db_path"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
         </div>
 
-        <div class="border border-gray-600 rounded p-4">
+        <div class="border border-gray-600 rounded p-4 gap-4">
             <label class="block font-semibold mb-2">Model Paths</label>
             <div id="modelPathsContainer" class="space-y-2"></div>
             <button type="button" onclick="addModelPathField()"
                     class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Path
             </button>
 
-            <div>
-                <label class="block font-semibold mb-2">Walkdir Parallel</label>
-                <input type="number" name="walkdir_parallel"
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Parallel (Scan folder and sync civitai in parallel)</label>
+                <input type="number" name="parallel"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
 
-            <div>
-                <label class="block font-semibold mb-2">Extensions</label>
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Extensions (Only scan files with these extensions)</label>
                 <div id="extensionsContainer" class="space-y-2"></div>
                 <button type="button" onclick="addExtensionField()"
                         class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Extension
@@ -35,24 +35,24 @@
         </div>
 
         <div class="border border-gray-600 rounded p-4">
-            <div>
+            <div class="py-4">
                 <label class="block font-semibold mb-2">Civitai API Key</label>
                 <input type="text" name="civitai.api_key"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 py-4">
                 <input type="checkbox" id="overwrite_thumbnail" name="civitai.overwrite_thumbnail"/>
                 <label for="overwrite_thumbnail">Overwrite Thumbnail</label>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 py-4">
                 <input type="checkbox" id="overwrite_json" name="civitai.overwrite_json"/>
                 <label for="overwrite_json">Overwrite JSON</label>
             </div>
 
-            <div>
-                <label class="block font-semibold mb-2">Civitai Saved Locations</label>
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Downloads (Default download locations for each type of model)</label>
                 <div id="civitaiPathsContainer" class="space-y-2"></div>
                 <button type="button" onclick="addCivitaiPathField()"
                         class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Location
@@ -61,20 +61,20 @@
         </div>
 
         <div class="border border-gray-600 rounded p-4">
-            <div>
+            <div class="py-4">
                 <label class="block font-semibold mb-2">Listen Address</label>
                 <input type="text" name="listen_addr"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
 
-            <div>
+            <div class="py-4">
                 <label class="block font-semibold mb-2">Listen Port</label>
                 <input type="number" name="listen_port"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
 
-            <div>
-                <label class="block font-semibold mb-2">API Per Page</label>
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Number Items Per Page</label>
                 <input type="number" name="api.per_page"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
@@ -97,7 +97,7 @@
         document.querySelector('[name="listen_addr"]').value = config.listen_addr || "";
         document.querySelector('[name="listen_port"]').value = config.listen_port || 0;
         document.querySelector('[name="api.per_page"]').value = config.api.per_page || 0;
-        document.querySelector('[name="walkdir_parallel"]').value = config.walkdir_parallel || 0;
+        document.querySelector('[name="parallel"]').value = config.parallel || 0;
         document.getElementById("overwrite_thumbnail").checked = config.civitai.overwrite_thumbnail || false;
         document.getElementById("overwrite_json").checked = config.civitai.overwrite_json || false;
 
@@ -108,7 +108,7 @@
             addModelPathField(label, paths[label]);
         }
 
-        const civPaths = config.civitai.saved_location || {};
+        const civPaths = config.civitai.download_dir || {};
         for (const label in civPaths) {
             addCivitaiPathField(label, civPaths[label]);
         }
@@ -206,14 +206,14 @@
                 api_key: form["civitai.api_key"].value,
                 overwrite_thumbnail: form["civitai.overwrite_thumbnail"].checked,
                 overwrite_json: form["civitai.overwrite_json"].checked,
-                saved_location: {},
+                download_dir: {},
             },
             listen_addr: form["listen_addr"].value,
             listen_port: parseInt(form["listen_port"].value),
             api: {
                 per_page: parseInt(form["api.per_page"].value),
             },
-            walkdir_parallel: parseInt(form["walkdir_parallel"].value),
+            parallel: parseInt(form["parallel"].value),
             extensions: [],
         };
 
@@ -229,7 +229,7 @@
         civFields.forEach(div => {
             const [labelInput, pathInput] = div.querySelectorAll("input");
             if (labelInput.value && pathInput.value) {
-                config.civitai.saved_location[labelInput.value] = pathInput.value;
+                config.civitai.download_dir[labelInput.value] = pathInput.value;
             }
         });
 

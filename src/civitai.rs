@@ -53,8 +53,8 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
         HeaderValue::from_str(&format!("Bearer {}", config.civitai.api_key))?,
     );
 
-    let semaphore = Arc::new(Semaphore::new(config.walkdir_parallel));
-    let parallelism = Parallelism::RayonNewPool(config.walkdir_parallel);
+    let semaphore = Arc::new(Semaphore::new(config.parallel));
+    let parallelism = Parallelism::RayonNewPool(config.parallel);
     for (_, base_path) in config.model_paths.iter() {
         for entry in WalkDir::new(base_path)
             .skip_hidden(true)

@@ -192,7 +192,7 @@ async fn saved_location(
 
     let model_type = query_params.model_type.to_lowercase();
 
-    if let Some(path) = config.civitai.saved_location.get(&model_type) {
+    if let Some(path) = config.civitai.download_dir.get(&model_type) {
         return web::Json(SavedLocationResponse {
             saved_location: path.clone(),
             ..Default::default()
@@ -245,7 +245,7 @@ async fn civitai_download(
 
     if let Some(model_type) = params.model_type.as_ref() {
         let model_type = model_type.to_lowercase();
-        config.civitai.saved_location.insert(model_type, params.dest.clone());
+        config.civitai.download_dir.insert(model_type, params.dest.clone());
         let _ = config.save(&config_data.config_path, true);
     }
 

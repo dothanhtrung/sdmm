@@ -52,7 +52,7 @@ pub struct CivitaiConfig {
     pub overwrite_thumbnail: bool,
     pub overwrite_json: bool,
     #[serde(default)]
-    pub saved_location: HashMap<String, String>,
+    pub download_dir: HashMap<String, String>,
 }
 
 impl Default for CivitaiConfig {
@@ -61,7 +61,7 @@ impl Default for CivitaiConfig {
             api_key: "your_civitai_api_key".to_string(),
             overwrite_thumbnail: false,
             overwrite_json: false,
-            saved_location: HashMap::new(),
+            download_dir: HashMap::new(),
         }
     }
 }
@@ -77,7 +77,7 @@ pub struct Config {
     pub listen_port: u32,
     pub api: APIConfig,
     #[serde(default)]
-    pub walkdir_parallel: usize,
+    pub parallel: usize,
     #[serde(default)]
     pub extensions: Vec<String>,
 }
@@ -87,7 +87,7 @@ impl Default for Config {
         Self {
             listen_addr: DEFAULT_LISTEN_ADDR.to_string(),
             listen_port: DEFAULT_LISTEN_PORT,
-            walkdir_parallel: 8,
+            parallel: 8,
             model_paths: HashMap::from([("collection1".to_string(), "/workspace/models".to_string())]),
             extensions: vec![
                 "safetensors".to_string(),

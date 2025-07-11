@@ -73,9 +73,9 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
         return;
     }
 
-    let semaphore = Arc::new(Semaphore::new(config.walkdir_parallel));
+    let semaphore = Arc::new(Semaphore::new(config.parallel));
     for (label, base_path) in config.model_paths.iter() {
-        let parallelism = Parallelism::RayonNewPool(config.walkdir_parallel);
+        let parallelism = Parallelism::RayonNewPool(config.parallel);
         for entry in WalkDir::new(base_path)
             .skip_hidden(true)
             .parallelism(parallelism.clone())

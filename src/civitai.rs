@@ -13,8 +13,10 @@ use std::fs::File;
 use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::fs;
+use tokio::sync::Semaphore;
 use tracing::{error, info};
 
 pub const PREVIEW_EXT: &str = "jpeg";
@@ -51,6 +53,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
         HeaderValue::from_str(&format!("Bearer {}", config.civitai.api_key))?,
     );
 
+    let semaphore = Arc::new(Semaphore::new(config.walkdir_parallel));
     let parallelism = Parallelism::RayonNewPool(config.walkdir_parallel);
     for (_, base_path) in config.model_paths.iter() {
         for entry in WalkDir::new(base_path)
@@ -65,13 +68,23 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
                     info!("Update model info: {}", entry.path().display());
-                    if let Err(e) = get_model_info(&path, &client, &headers, None, &config).await {
-                        error!("Failed to get model info: {}", e);
-                    }
+                    let client = client.clone();
+                    let headers = headers.clone();
+                    let config = config.clone();
+                    let semaphore = semaphore.clone();
+
+                    tokio::spawn(async move {
+                        if let Ok(_permit) = semaphore.acquire().await {
+                            if let Err(e) = get_model_info(&path, &client, &headers, None, &config).await {
+                                error!("Failed to get model info: {}", e);
+                            }
+                        }
+                    });
                 }
             }
         }
     }
+
     Ok(())
 }
 

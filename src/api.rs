@@ -5,16 +5,11 @@ mod item;
 mod maintenance;
 mod tag;
 
-use crate::civitai::{
-    calculate_blake3, file_type, get_extension_from_url, get_model_info, update_model_info, CivitaiFileMetadata,
-    CivitaiModel, FileType, PREVIEW_EXT,
-};
+use crate::civitai::{calculate_blake3, CivitaiFileMetadata, CivitaiModel};
 use crate::db::item::insert_or_update;
-use crate::db::tag::{add_tag_from_model_info, update_tag_item, Tag, TagCount};
+use crate::db::tag::add_tag_from_model_info;
 use crate::db::DBPool;
-use crate::{ConfigData, BASE_PATH_PREFIX};
-use actix_web::{get, post, rt, web, Responder};
-use reqwest::header::{HeaderValue, AUTHORIZATION};
+use actix_web::web;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::{Path, PathBuf};

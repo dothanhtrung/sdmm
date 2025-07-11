@@ -32,12 +32,21 @@
                 <select name="types" multiple size="7"
                         class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1">
                     <option value="Checkpoint">Checkpoint</option>
+                    <option value="LORA">LORA</option>
                     <option value="TextualInversion">TextualInversion</option>
                     <option value="Hypernetwork">Hypernetwork</option>
                     <option value="AestheticGradient">AestheticGradient</option>
-                    <option value="LORA">LORA</option>
+                    <option value="LoCon">LoCon</option>
+                    <option value="DoRA">DoRA</option>
                     <option value="Controlnet">Controlnet</option>
+                    <option value="Upscaler">Upscaler</option>
+                    <option value="MotionModule">MotionModule</option>
+                    <option value="VAE">VAE</option>
                     <option value="Poses">Poses</option>
+                    <option value="Wildcards">Wildcards</option>
+                    <option value="Workflows">Workflows</option>
+                    <option value="Detection">Detection</option>
+                    <option value="Other">Other</option>
                 </select>
 
                 <select name="baseModels" multiple size="7"
@@ -100,7 +109,13 @@
                         class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1">
                     <option value="Highest Rated">Highest Rated</option>
                     <option value="Most Downloaded">Most Downloaded</option>
+                    <option value="Most Liked">Most Liked</option>
+                    <option value="Most Discussed">Most Discussed</option>
+                    <option value="Most Collected">Most Collected</option>
+                    <option value="Most Images">Most Images</option>
                     <option value="Newest">Newest</option>
+                    <option value="Oldest">Oldest</option>
+
                 </select>
 
                 <!-- NSFW toggle -->
@@ -271,6 +286,7 @@
                 btn.className = "bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded";
                 btn.addEventListener("click", async () => {
                     const path = encodeURIComponent(input.value);
+                    // TODO: Does need to pass model_type
                     const url = `/api/item/civitai_download?blake3=${file.hashes?.BLAKE3}&dest=${path}&url=${file.downloadUrl}&name=${file.name}&model_type=${encodeURIComponent(item.type || '')}`;
                     const download_res = await fetch(url);
                     const res_value = await download_res.json();

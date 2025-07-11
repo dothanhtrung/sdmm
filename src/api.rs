@@ -13,6 +13,7 @@ use actix_web::web;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 use tokio::fs;
 use tracing::error;
 
@@ -91,6 +92,14 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
         .unwrap_or_default()
         .to_string();
 
+    // Read file metadata on disk
+    let mut modified_time = 0;
+    if let Ok(local_metadata) = fs::metadata(path).await {
+        if let Ok(modified) = local_metadata.modified() {
+            modified_time = modified.duration_since(UNIX_EPOCH).unwrap_or_default().as_millis();
+        }
+    }
+
     match insert_or_update(
         &db_pool.sqlite_pool,
         Some(name.as_str()),
@@ -98,6 +107,7 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
         label,
         blake3.as_str(),
         &model_info.name,
+        modified_time as i64,
     )
     .await
     {

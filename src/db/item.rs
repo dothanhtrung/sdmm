@@ -43,6 +43,7 @@ pub async fn insert_or_update(
     base_label: &str,
     blake3: &str,
     model_name: &str,
+    updated_at_ms: i64,
 ) -> Result<i64, sqlx::Error> {
     let ret_id;
 
@@ -55,11 +56,12 @@ pub async fn insert_or_update(
     .await
     {
         sqlx::query!(
-            r#"UPDATE item SET is_checked=true, blake3=?, model_name =?, base_label=?, name=? WHERE id = ?"#,
+            r#"UPDATE item SET is_checked=true, blake3=?, model_name =?, base_label=?, name=?, updated_at = ? WHERE id = ?"#,
             blake3,
             model_name,
             base_label,
             name,
+            updated_at_ms,
             id,
         )
         .execute(pool)
@@ -67,12 +69,13 @@ pub async fn insert_or_update(
         ret_id = id;
     } else {
         ret_id = sqlx::query!(
-            r#"INSERT INTO item (name, model_name, path, base_label, blake3) VALUES (?, ?, ?, ?, ?) "#,
+            r#"INSERT INTO item (name, model_name, path, base_label, blake3, updated_at) VALUES (?, ?, ?, ?, ?, ?) "#,
             name,
             model_name,
             path,
             base_label,
             blake3,
+            updated_at_ms,
         )
         .execute(pool)
         .await?
@@ -105,7 +108,7 @@ pub async fn get_by_id(pool: &SqlitePool, id: i64) -> Result<Item, sqlx::Error> 
 pub async fn get(pool: &SqlitePool, limit: i64, offset: i64) -> Result<(Vec<Item>, i64), sqlx::Error> {
     let items = sqlx::query_as!(
         Item,
-        r#"SELECT id, name, path, base_label, note FROM item WHERE is_checked = true ORDER BY id DESC LIMIT ? OFFSET ?"#,
+        r#"SELECT id, name, path, base_label, note FROM item WHERE is_checked = true ORDER BY updated_at DESC LIMIT ? OFFSET ?"#,
         limit,
         offset
     )
@@ -118,15 +121,6 @@ pub async fn get(pool: &SqlitePool, limit: i64, offset: i64) -> Result<(Vec<Item
 
     Ok((items, total))
 }
-
-// pub async fn get_tags(pool: &SqlitePool, id: i64) -> Result<Vec<String>, sqlx::Error> {
-//     sqlx::query_scalar!(
-//         "SELECT tag.name FROM tag LEFT JOIN tag_item ON tag.id = tag_item.tag WHERE tag_item.item = ? ORDER BY tag.name",
-//         id
-//     )
-//         .fetch_all(pool)
-//         .await
-// }
 
 pub async fn search(
     pool: &SqlitePool,
@@ -141,7 +135,7 @@ pub async fn search(
     if !tag_only {
         let items_by_name = sqlx::query_as!(
         Item,
-        r#"SELECT id,name, path, base_label, note FROM item WHERE is_checked = true AND name COLLATE NOCASE LIKE '%' || ? || '%' OR model_name LIKE '%' || ? || '%' ORDER BY id DESC LIMIT ? OFFSET ?"#,
+        r#"SELECT id,name, path, base_label, note FROM item WHERE is_checked = true AND name COLLATE NOCASE LIKE '%' || ? || '%' OR model_name LIKE '%' || ? || '%' ORDER BY updated_at DESC LIMIT ? OFFSET ?"#,
         search, search, limit, offset
     )
             .fetch_all(pool)
@@ -170,7 +164,7 @@ pub async fn search(
             tags.join("','")
         );
         let query = format!(
-            "SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label {} ORDER BY item.id DESC LIMIT {} OFFSET {}",
+            "SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label {} ORDER BY item.updated_at DESC LIMIT {} OFFSET {}",
             condition,
             limit,
             offset

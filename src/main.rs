@@ -7,6 +7,7 @@
 //! * Browsing and download model from Civitai
 //!   * Support more filters
 //! * Duplicate check
+//! * Show video preview if image preview is not available.
 
 #[cfg(target_os = "linux")]
 use tikv_jemallocator::Jemalloc;

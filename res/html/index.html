@@ -31,6 +31,12 @@
 <script>
     const grid = document.getElementById("grid");
 
+    function getApiUrl() {
+        const path = window.location.pathname;
+        const search = window.location.search;
+        return "/api/item" + (path === "/" ? "" : path) + search;
+    }
+
     function renderPagination(currentPage, totalItems, count) {
         const totalPages = Math.max(1, Math.ceil(totalItems / count));
         const top = document.getElementById("paginationTop");
@@ -148,12 +154,11 @@
     refreshContent();
 </script>
 
-
 <script>
     function handleDelete(id) {
         if (!confirm('Are you sure want to move this item to trash?')) return;
 
-        fetch(`/api/delete_item?id=${id}`)
+        fetch(`/api/item/delete?id=${id}`)
             .then(res => {
                 if (res.ok) {
                     location.reload();

@@ -21,9 +21,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tera = "1.20"
 jwalk = "0.8"
-sha2 = "0.11.0-rc"
+#sha2 = "0.11.0-rc"
 blake3 = "1.8"
-hex = "0.4"
+#hex = "0.4"
 reqwest = { version = "0.12", features = ["blocking", "json", "stream"] }
 dotenvy = "0.15"
 infer = "0.19"

@@ -260,7 +260,7 @@
             const input = document.createElement("input");
             input.type = "text";
             input.className = "flex-grow bg-gray-800 text-white px-2 py-2 rounded border border-gray-700";
-            const res = await fetch(`/api/saved_location?model_type=${encodeURIComponent(item.type || '')}&blake3=${file.hashes?.BLAKE3}`);
+            const res = await fetch(`/api/item/saved_location?model_type=${encodeURIComponent(item.type || '')}&blake3=${file.hashes?.BLAKE3}`);
             const location = await res.json();
             input.value = location.saved_location || "";
             const is_downloaded = location.is_downloaded;
@@ -271,7 +271,7 @@
                 btn.className = "bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded";
                 btn.addEventListener("click", async () => {
                     const path = encodeURIComponent(input.value);
-                    const url = `/api/civitai_download?blake3=${file.hashes?.BLAKE3}&dest=${path}&url=${file.downloadUrl}&name=${file.name}&model_type=${encodeURIComponent(item.type || '')}`;
+                    const url = `/api/item/civitai_download?blake3=${file.hashes?.BLAKE3}&dest=${path}&url=${file.downloadUrl}&name=${file.name}&model_type=${encodeURIComponent(item.type || '')}`;
                     const download_res = await fetch(url);
                     const res_value = await download_res.json();
                     alert(res_value.err);

@@ -134,7 +134,7 @@
     function handleDelete(id) {
         if (!confirm('Are you sure want to move this item to trash?')) return;
 
-        fetch(`/api/delete_item?id=${id}`)
+        fetch(`/api/item/delete?id=${id}`)
             .then(res => {
                 if (res.ok) {
                     window.location.href = "/"; // Redirect to homepage
@@ -152,7 +152,7 @@
 <script>
     async function refreshContent() {
         document.addEventListener("DOMContentLoaded", async () => {
-            const res = await fetch("/api?id={{id}}");
+            const res = await fetch("/api/item?id={{id}}");
             const json = await res.json();
 
             const item = json.items?.[0];
@@ -259,7 +259,7 @@
         }
         const item_id = parseInt(match[1]);
 
-        const response = await fetch("/api/update_item", {
+        const response = await fetch("/api/item/update", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -280,7 +280,7 @@
     let allTags = [];
 
     async function fetchTags() {
-        const res = await fetch("/api/list_tags");
+        const res = await fetch("/api/tag");
         if (res.ok) {
             allTags = await res.json(); // assumed [{ tag, count }]
         }

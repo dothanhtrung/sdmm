@@ -1,12 +1,12 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
-use crate::api::SearchQuery;
 use crate::ConfigData;
 use actix_files::Files;
 use actix_web::web::Data;
 use actix_web::{error, get, web, HttpResponse, Responder};
 use actix_web_lab::extract::Query;
 use tera::Tera;
+use crate::api::SearchQuery;
 
 pub fn scope_config(cfg: &mut web::ServiceConfig) {
     let tera = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/res/html/**/*")).unwrap();

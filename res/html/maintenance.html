@@ -52,25 +52,25 @@
     }
 
     document.getElementById("reloadBtn").addEventListener("click", () => {
-        sendAction("/api/scan_folder");
+        sendAction("/api/maintenance/scan");
     });
 
     document.getElementById("syncBtn").addEventListener("click", () => {
-        sendAction("/api/sync_civitai");
+        sendAction("/api/maintenance/sync_civitai");
     });
 
     document.getElementById("emptyTrashBtn").addEventListener("click", () => {
-        sendAction("/api/empty_trash");
+        sendAction("/api/maintenance/empty_trash");
     })
 
     document.getElementById("removeOrphanBtn").addEventListener("click", () => {
-        sendAction("/api/remove_orphan");
+        sendAction("/api/maintenance/remove_orphan");
     })
 
     async function fetchTags() {
         const grid = document.getElementById("all-tags");
         grid.innerHTML = "";
-        const fetched = await fetch("/api/list_tags");
+        const fetched = await fetch("/api/tag");
         const tags = await fetched.json();
         tags.forEach(tag => {
             console.log(tag.tag);

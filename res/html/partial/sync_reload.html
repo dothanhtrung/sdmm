@@ -31,10 +31,10 @@
     }
 
     document.getElementById("reloadBtn").addEventListener("click", () => {
-        callAndRefresh("/api/scan_folder");
+        callAndRefresh("/api/maintenance/scan");
     });
 
     document.getElementById("syncBtn").addEventListener("click", () => {
-        callAndRefresh("/api/sync_civitai");
+        callAndRefresh("/api/maintenance/sync_civitai");
     });
 </script>

@@ -41,7 +41,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", async () => {
         const tagname = decodeURIComponent(window.location.pathname.split("/").pop());
-        const res = await fetch(`/api/tag/${encodeURIComponent(tagname)}`);
+        const res = await fetch(`/api/tag/detail/${encodeURIComponent(tagname)}`);
         const json = await res.json();
         const tag = json.tag;
 
@@ -58,7 +58,7 @@
                 description: document.getElementById("tag-desc").value,
             };
 
-            const postRes = await fetch("/api/tag", {
+            const postRes = await fetch("/api/tag/update", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -75,7 +75,7 @@
     function handleDelete() {
         if (!confirm('Are you sure want to delete this tag?')) return;
         const id = document.getElementById("tag-id").value;
-        fetch(`/api/delete_tag?id=${id}`)
+        fetch(`/api/tag/delete?id=${id}`)
             .then(res => {
                 if (res.ok) {
                     window.location.href = "/maintenance";

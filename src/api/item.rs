@@ -1,3 +1,5 @@
+//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 use crate::api::{CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
 use crate::civitai::{download_file, file_type, get_extension_from_url, get_model_info, FileType, PREVIEW_EXT};
 use crate::config::Config;

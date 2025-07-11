@@ -1,3 +1,5 @@
+//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 use crate::api::{CommonResponse, DeleteRequest};
 use crate::db;
 use crate::db::tag::Tag;

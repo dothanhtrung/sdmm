@@ -1,3 +1,5 @@
+//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 use crate::api::CommonResponse;
 use crate::config::Config;
 use crate::ConfigData;

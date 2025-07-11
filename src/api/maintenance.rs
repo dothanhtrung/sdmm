@@ -1,3 +1,5 @@
+//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 use crate::api::TRASH_DIR;
 use crate::civitai::update_model_info;
 use crate::db::DBPool;

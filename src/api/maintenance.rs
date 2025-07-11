@@ -1,14 +1,16 @@
+use crate::api::TRASH_DIR;
 use crate::civitai::update_model_info;
 use crate::db::DBPool;
 use crate::{api, db, ConfigData};
 use actix_web::web::Data;
 use actix_web::{get, rt, web, Responder};
+use jwalk::{Parallelism, WalkDir};
 use std::collections::HashSet;
 use std::path::PathBuf;
-use tracing::error;
-use jwalk::{Parallelism, WalkDir};
+use std::sync::Arc;
 use tokio::fs;
-use crate::api::TRASH_DIR;
+use tokio::sync::Semaphore;
+use tracing::{error, info};
 
 pub fn scope(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -16,8 +18,7 @@ pub fn scope(cfg: &mut web::ServiceConfig) {
             .service(scan_folder)
             .service(remove_orphan)
             .service(sync_civitai)
-            .service(empty_trash)
-        ,
+            .service(empty_trash),
     );
 }
 
@@ -72,6 +73,7 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
         return;
     }
 
+    let semaphore = Arc::new(Semaphore::new(config.walkdir_parallel));
     for (label, base_path) in config.model_paths.iter() {
         let parallelism = Parallelism::RayonNewPool(config.walkdir_parallel);
         for entry in WalkDir::new(base_path)
@@ -90,7 +92,16 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
             if entry.file_type().is_file() || entry.file_type().is_symlink() {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
-                    api::save_model_info(&db_pool, &path, label, relative_path.as_str()).await;
+                    let semaphore = semaphore.clone();
+                    let db_pool = db_pool.clone();
+                    let label = label.clone();
+
+                    tokio::spawn(async move {
+                        if let Ok(_permit) = semaphore.acquire().await {
+                            info!("Found {path:?}");
+                            api::save_model_info(&db_pool, &path, label.as_str(), relative_path.as_str()).await;
+                        }
+                    });
                 }
             }
         }

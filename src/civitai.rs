@@ -67,13 +67,13 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
             if entry.file_type().is_file() || entry.file_type().is_symlink() {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
-                    info!("Update model info: {}", entry.path().display());
                     let client = client.clone();
                     let headers = headers.clone();
                     let config = config.clone();
                     let semaphore = semaphore.clone();
 
                     tokio::spawn(async move {
+                        info!("Update model info: {}", entry.path().display());
                         if let Ok(_permit) = semaphore.acquire().await {
                             if let Err(e) = get_model_info(&path, &client, &headers, None, &config).await {
                                 error!("Failed to get model info: {}", e);

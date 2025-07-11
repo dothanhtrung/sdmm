@@ -7,7 +7,6 @@
 //! * Browsing and download model from Civitai
 //!   * Support more filters
 //! * Duplicate check
-//! * Setting page
 
 #[cfg(target_os = "linux")]
 use tikv_jemallocator::Jemalloc;
@@ -33,7 +32,7 @@ use anyhow::anyhow;
 use clap::Parser;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tracing_subscriber::EnvFilter;
 
 const BASE_PATH_PREFIX: &str = "base_";
@@ -51,7 +50,7 @@ struct Cli {
 }
 
 struct ConfigData {
-    config: Mutex<Config>,
+    config: RwLock<Config>,
     config_path: PathBuf,
 }
 
@@ -83,7 +82,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     if args.update_model_info {
-        update_model_info(config.clone()).await?;
+        update_model_info(&config).await?;
         return Ok(());
     }
 
@@ -98,7 +97,7 @@ async fn main() -> anyhow::Result<()> {
     let model_paths = config.model_paths.clone();
     let ref_db_pool = Arc::new(db_pool);
     let config_data = Arc::new(ConfigData {
-        config: Mutex::new(config.clone()),
+        config: RwLock::new(config.clone()),
         config_path: args.config.clone(),
     });
 

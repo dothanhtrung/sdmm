@@ -61,7 +61,7 @@ async fn maintenance(tmpl: Data<Tera>) -> impl Responder {
 #[get("/civitai")]
 async fn civitai(tmpl: Data<Tera>, config_data: Data<ConfigData>) -> impl Responder {
     let mut ctx = tera::Context::new();
-    let config = config_data.config.lock().await;
+    let config = config_data.config.read().await;
     ctx.insert("token", &config.civitai.api_key);
     let template = tmpl
         .render("civitai.html", &ctx)

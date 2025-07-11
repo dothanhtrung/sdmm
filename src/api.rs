@@ -123,7 +123,7 @@ struct CommonResponse {
 
 #[get("")]
 async fn get(config: Data<ConfigData>, db_pool: Data<DBPool>, query_params: Query<SearchQuery>) -> impl Responder {
-    let config = config.config.lock().await;
+    let config = config.config.read().await;
     let page = max(1, query_params.page.unwrap_or(1)) - 1;
     let limit = max(0, query_params.count.unwrap_or(config.api.per_page as i64));
     let offset = page * limit;
@@ -233,9 +233,9 @@ async fn remove_orphan(db_pool: Data<DBPool>) -> impl Responder {
 
 #[get("sync_civitai")]
 async fn sync_civitai(config_data: Data<ConfigData>, db_pool: Data<DBPool>) -> impl Responder {
-    let config = config_data.config.lock().await.clone();
     rt::spawn(async move {
-        let _ = update_model_info(config).await;
+        let config = config_data.config.read().await.clone();
+        let _ = update_model_info(&config).await;
         scan(config_data, db_pool).await;
     });
     web::Json("")
@@ -247,7 +247,7 @@ async fn saved_location(
     db_pool: Data<DBPool>,
     query_params: Query<SavedLocationQuery>,
 ) -> impl Responder {
-    let config = config.config.lock().await;
+    let config = config.config.read().await;
 
     if let Some(blake3) = query_params.blake3.as_ref() {
         if let Ok(item) = item::get_by_hash(&db_pool.sqlite_pool, blake3.to_lowercase().as_str()).await {
@@ -291,7 +291,7 @@ async fn civitai_download(
     config_data: Data<ConfigData>,
     params: Query<CivitaiDownloadQuery>,
 ) -> impl Responder {
-    let mut config = config_data.config.lock().await.clone();
+    let mut config = config_data.config.write().await.clone();
     let mut path = PathBuf::from(&params.dest);
 
     if let Err(e) = fs::create_dir_all(&path).await {
@@ -359,7 +359,7 @@ async fn civitai_download(
 
 #[get("delete_item")]
 async fn delete_item(config: Data<ConfigData>, db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl Responder {
-    let config = config.config.lock().await;
+    let config = config.config.read().await;
     for id in params.ids.iter() {
         let Ok((rel_path, label)) = item::mark_obsolete(&db_pool.sqlite_pool, *id).await else {
             continue;
@@ -388,7 +388,7 @@ async fn delete_item(config: Data<ConfigData>, db_pool: Data<DBPool>, params: Qu
 
 #[get("empty_trash")]
 async fn empty_trash(config: Data<ConfigData>) -> impl Responder {
-    let config = config.config.lock().await;
+    let config = config.config.read().await;
     for (_, base_path) in config.model_paths.iter() {
         let trash_dir = PathBuf::from(base_path).join(TRASH_DIR);
         if let Err(e) = fs::remove_dir_all(&trash_dir).await {
@@ -466,13 +466,13 @@ async fn delete_tag(db_pool: Data<DBPool>, params: Query<DeleteRequest>) -> impl
 
 #[get("get_config")]
 async fn get_config(config_data: Data<ConfigData>) -> impl Responder {
-    let config = (*config_data.config.lock().await).clone();
+    let config = (*config_data.config.read().await).clone();
     web::Json(config)
 }
 
 #[post("update_config")]
 async fn update_config(config_data: Data<ConfigData>, data: web::Json<Config>) -> impl Responder {
-    let mut config = config_data.config.lock().await;
+    let mut config = config_data.config.write().await;
     *config = data.into_inner();
     if let Err(e) = config.save(&config_data.config_path, true) {
         web::Json(CommonResponse {
@@ -544,7 +544,7 @@ fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String
 }
 
 async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
-    let config = config.config.lock().await;
+    let config = config.config.read().await;
     let valid_ext = config.extensions.iter().collect::<HashSet<_>>();
 
     if let Err(e) = item::mark_obsolete_all(&db_pool.sqlite_pool).await {

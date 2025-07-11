@@ -1,8 +1,7 @@
 (
     db: (
-        init_timeout_secs: 5,
         sqlite: (
-            db_path: "./sdmm.sqlite",
+            db_path: "sdmm.sqlite",
         ),
     ),
     model_paths: {
@@ -12,14 +11,14 @@
         api_key: "your_civitai_api_key",
         overwrite_thumbnail: false,
         overwrite_json: false,
-        saved_location: {},
+        download_dir: {},
     ),
     listen_addr: "0.0.0.0",
     listen_port: 9696,
     api: (
         per_page: 20,
     ),
-    walkdir_parallel: 8,
+    parallel: 8,
     extensions: [
         "safetensors",
         "ckpt",

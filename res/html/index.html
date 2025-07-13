@@ -13,7 +13,7 @@
                 <div id="paginationTop" class="inline-flex flex-wrap items-center gap-1"></div>
             </div>
 
-            <div id="grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            <div id="grid" class="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7">
 
             </div>
 
@@ -128,21 +128,21 @@
                     }
                 }
                 card.innerHTML = `
-                    <a href="/item/${item.id}">
-                        ${preview_tag}
-                        <div class="absolute top-0 left-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">${modelType}</div>
-                    </a>
-                    <div class="p-4 flex flex-row gap-2">
-                        <h2 class="text-lg font-semibold truncate">
-                            <a href="/item/${item.id}">${item.name}</a>
-                        </h2>
-
+                    <div class="relative">
+                        <a href="/item/${item.id}">
+                            ${preview_tag}
+                            <div class="absolute top-0 left-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">${modelType}</div>
+                        </a>
                         <button
-                            onclick="handleDelete(${item.id})"
-                            class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded">
+                            onclick="handleDelete(${item.id}); event.stopPropagation();"
+                            class="absolute top-0 right-0 m-2 z-10 text-sm bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded">
                             🗑️
                         </button>
                     </div>
+
+                    <h2 class="text-md font-semibold truncate">
+                        <a href="/item/${item.id}">${item.name}</a>
+                    </h2>
                 `;
 
                 grid.appendChild(card);

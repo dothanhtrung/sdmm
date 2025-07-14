@@ -27,7 +27,7 @@
             </div>
 
             <!--            TODO: Store these search setting in config-->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
                 <!-- Type selector -->
                 <select name="types" multiple size="7"
                         class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1">
@@ -106,7 +106,8 @@
 
                 <!-- Sort selector -->
                 <select name="sort"
-                        class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1">
+                        class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1"
+                        value="{{config.search.sort}}">
                     <option value="Highest Rated">Highest Rated</option>
                     <option value="Most Downloaded">Most Downloaded</option>
                     <option value="Most Liked">Most Liked</option>
@@ -118,9 +119,23 @@
 
                 </select>
 
+
+                <label class="">
+                    <input
+                            type="number"
+                            name="per_page"
+                            placeholder="Results per page"
+                            min="1"
+                            max="100"
+                            value="{{config.search.per_page}}"
+                            class="flex-grow bg-gray-800 border border-gray-700 text-white placeholder-gray-400 px-4 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    /> Results per page
+                </label>
+
+
                 <!-- NSFW toggle -->
-                <label class="col-span-1 flex items-center text-white">
-                    <input type="checkbox" name="nsfw" class="mr-2"> NSFW
+                <label class="">
+                    <input type="checkbox" name="nsfw" class="mr-2" value="{{config.search.nsfw}}"> NSFW
                 </label>
             </div>
         </form>
@@ -155,8 +170,48 @@
 </main>
 
 <script>
+    let config = {};
+
+    async function loadConfigAndApply() {
+        const res = await fetch("/api/config/");
+        config = await res.json();
+        const search = config?.civitai?.search || {};
+
+        const form = document.getElementById("searchForm");
+        const typesSelect = form.types;
+
+        for (const option of typesSelect.options) {
+            option.selected = search.types.includes(option.value);
+        }
+
+        const baseModelsSelect = form.baseModels;
+        for (const option of baseModelsSelect.options) {
+            option.selected = search.base_models.includes(option.value);
+        }
+
+        // Sort
+        if (search.sort) {
+            form.sort.value = search.sort;
+        }
+
+        // NSFW
+        if (typeof search.nsfw === "boolean") {
+            form.nsfw.checked = search.nsfw;
+        }
+
+        // per_page
+        if (search.per_page) {
+            form.per_page.value = search.per_page;
+        }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+        await loadConfigAndApply();
+    });
+</script>
+
+<script>
     let nextCursor = null;
-    const limit = 15;
 
     async function fetchAndRender(cursor = null) {
         showLoading(true);
@@ -169,14 +224,29 @@
         const nsfw = formData.get("nsfw");
         const types = formData.getAll("types");
         const baseModels = formData.getAll("baseModels");
+        const limit = parseInt(formData.get("per_page")) || 15;
 
-        const url = new URL("https://civitai.com/api/v1/models?token={{token}}");
+        config.civitai.search.types = types;
+        config.civitai.search.base_models = baseModels;
+        config.civitai.search.sort = sort;
+        config.civitai.search.nsfw = nsfw? true : false;
+        config.civitai.search.per_page = limit;
+        await fetch("/api/config/update", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(config),
+        });
+
+
+        const url = new URL("https://civitai.com/api/v1/models?token={{config.api_key}}");
         url.searchParams.set("limit", limit);
         url.searchParams.set("query", query);
         url.searchParams.set("sort", sort);
         url.searchParams.set("nsfw", nsfw ? "true" : "false");
         if (types.length > 0) {
-            url.searchParams.set("types", types.join(","));
+            url.searchParams.append("types", types.join(","));
         }
         for (const baseM of baseModels) {
             url.searchParams.append("baseModels", baseM);

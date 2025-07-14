@@ -52,7 +52,8 @@
             </div>
 
             <div class="py-4">
-                <label class="block font-semibold mb-2">Downloads (Default download locations for each type of model)</label>
+                <label class="block font-semibold mb-2">Downloads (Default download locations for each type of
+                    model)</label>
                 <div id="civitaiPathsContainer" class="space-y-2"></div>
                 <button type="button" onclick="addCivitaiPathField()"
                         class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Location
@@ -88,9 +89,11 @@
 </div>
 
 <script>
+    let config = {};
+
     async function loadConfig() {
         const res = await fetch("/api/config");
-        const config = await res.json();
+        config = await res.json();
 
         document.querySelector('[name="db.sqlite.db_path"]').value = config.db.sqlite.db_path || "";
         document.querySelector('[name="civitai.api_key"]').value = config.civitai.api_key || "";
@@ -195,27 +198,18 @@
         e.preventDefault();
 
         const form = e.target;
-        const config = {
-            db: {
-                sqlite: {
-                    db_path: form["db.sqlite.db_path"].value,
-                },
-            },
-            model_paths: {},
-            civitai: {
-                api_key: form["civitai.api_key"].value,
-                overwrite_thumbnail: form["civitai.overwrite_thumbnail"].checked,
-                overwrite_json: form["civitai.overwrite_json"].checked,
-                download_dir: {},
-            },
-            listen_addr: form["listen_addr"].value,
-            listen_port: parseInt(form["listen_port"].value),
-            api: {
-                per_page: parseInt(form["api.per_page"].value),
-            },
-            parallel: parseInt(form["parallel"].value),
-            extensions: [],
-        };
+        config.db.sqlite.db_path = form["db.sqlite.db_path"].value;
+        config.civitai.api_key = form["civitai.api_key"].value;
+        config.civitai.overwrite_thumbnail = form["civitai.overwrite_thumbnail"].checked;
+        config.civitai.overwrite_json = form["civitai.overwrite_json"].checked;
+        config.listen_addr = form["listen_addr"].value;
+        config.listen_port = parseInt(form["listen_port"].value);
+        config.api.per_page = parseInt(form["api.per_page"].value);
+        config.parallel = parseInt(form["parallel"].value);
+
+        config.extensions = [];
+        config.model_paths = {};
+        config.civitai.download_dir = {};
 
         const pathFields = document.getElementById("modelPathsContainer").querySelectorAll("div");
         pathFields.forEach(div => {

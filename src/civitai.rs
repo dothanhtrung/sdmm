@@ -179,7 +179,9 @@ async fn download_preview(
 
                 let file_type = file_type(image_path).await;
                 if file_type == FileType::Video {
-                    generate_video_thumbnail(&preview_file, config.civitai.overwrite_thumbnail)?;
+                    if let Err(e) = generate_video_thumbnail(&preview_file, config.civitai.overwrite_thumbnail) {
+                        error!("Failed to generate video thumbnail: {}", e);
+                    }
                 } else if file_type == FileType::Image {
                     //  Change preview image extension to jpeg for easier to manage
                     if image_path.extension().unwrap_or_default() != PREVIEW_EXT {

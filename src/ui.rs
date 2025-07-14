@@ -1,12 +1,12 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
+use crate::api::SearchQuery;
 use crate::ConfigData;
 use actix_files::Files;
 use actix_web::web::Data;
 use actix_web::{error, get, web, HttpResponse, Responder};
 use actix_web_lab::extract::Query;
 use tera::Tera;
-use crate::api::SearchQuery;
 
 pub fn scope_config(cfg: &mut web::ServiceConfig) {
     let tera = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/res/html/**/*")).unwrap();
@@ -62,12 +62,13 @@ async fn maintenance(tmpl: Data<Tera>) -> impl Responder {
 async fn civitai(tmpl: Data<Tera>, config_data: Data<ConfigData>) -> impl Responder {
     let mut ctx = tera::Context::new();
     let config = config_data.config.read().await;
-    ctx.insert("token", &config.civitai.api_key);
-    let template = tmpl
-        .render("civitai.html", &ctx)
-        .map_err(|e| error::ErrorInternalServerError(format!("Template error: {:?}", e)))
-        .unwrap_or_default();
-    HttpResponse::Ok().content_type("text/html").body(template)
+    ctx.insert("config", &config.civitai);
+    match tmpl.render("civitai.html", &ctx) {
+        Ok(template) => HttpResponse::Ok().content_type("text/html").body(template),
+        Err(e) => HttpResponse::Ok()
+            .content_type("text/html")
+            .body(format!("Template error: {e}")),
+    }
 }
 
 #[get("/tag/{name}")]

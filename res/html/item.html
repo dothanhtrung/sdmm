@@ -162,7 +162,7 @@
             const info = await JSON.parse(item.info || {});
 
             document.getElementById("item-name").textContent = item.name || "";
-            document.getElementById("item-model").textContent = item.model_name || "";
+            document.getElementById("item-model").textContent = info.model?.name || "";
             document.getElementById("item-path").textContent = item.path || "";
             document.getElementById("item-trained-words").textContent = (info.trainedWords || []).join(" ");
 

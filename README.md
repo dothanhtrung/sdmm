@@ -31,6 +31,8 @@ Run the web server:
 
 > Note: Put the [res](./res) folder in same directory with binary `sdmm`.
 
+Now you can access it at http://localhost:9696 or http://your_ip_address:9696
+
 Install
 -------
 

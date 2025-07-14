@@ -5,3 +5,13 @@ css:
 
 windows:
   cargo build --target=x86_64-pc-windows-gnu --release
+
+release:
+  cargo build --release
+  rm -rf output/
+  mkdir -p output/sdmm/res
+  cp target/release/sdmm output/sdmm
+  cp -r res/html output/sdmm/res/
+  cp -r res/css output/sdmm/res/
+  cp -r res/assets output/sdmm/res/
+  cd output && tar cJvf sdmm_linux.tar.xz sdmm

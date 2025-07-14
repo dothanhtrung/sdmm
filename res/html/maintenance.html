@@ -73,7 +73,6 @@
         const fetched = await fetch("/api/tag");
         const tags = await fetched.json();
         tags.forEach(tag => {
-            console.log(tag.tag);
             const tags_card = document.createElement("a");
             tags_card.href = `/tag/${tag.tag}`;
             tags_card.className = "text-blue-300 hover:text-blue-400";

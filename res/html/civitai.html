@@ -212,8 +212,10 @@
 
 <script>
     let nextCursor = null;
+    let lastCursor = [];
+    let currCursor = null;
 
-    async function fetchAndRender(cursor = null) {
+    async function fetchAndRender(cursor = null, go_next = true) {
         showLoading(true);
         const grid = document.getElementById("grid");
         grid.innerHTML = "";
@@ -229,7 +231,7 @@
         config.civitai.search.types = types;
         config.civitai.search.base_models = baseModels;
         config.civitai.search.sort = sort;
-        config.civitai.search.nsfw = nsfw? true : false;
+        config.civitai.search.nsfw = nsfw ? true : false;
         config.civitai.search.per_page = limit;
         await fetch("/api/config/update", {
             method: "POST",
@@ -260,20 +262,35 @@
         showLoading(false);
 
         json.items?.forEach(item => {
-            const previewImage = item.modelVersions?.[0]?.images?.[0]?.url || "";
+            const firstImage = item.modelVersions?.[0]?.images?.[0] || {};
+            const previewImage = firstImage.url || "";
+
+            let preview = ``;
+            if (firstImage.type === "image") {
+                preview = `<img src="${previewImage}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">`;
+            } else {
+                preview = `<video class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100" controls>
+                    <source src="${previewImage}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>`;
+            }
 
             const card = document.createElement("div");
             card.className = "bg-gray-900 border border-gray-700 rounded-lg overflow-hidden shadow-md cursor-pointer hover:bg-gray-800";
             card.innerHTML = `
-        <img src="${previewImage}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">
-        <div class="p-4">
-          <h2 class="text-lg font-semibold truncate text-white">${item.name}</h2>
-        </div>
-      `;
+                ${preview}
+                <div class="p-4">
+                  <h2 class="text-lg font-semibold truncate text-white">${item.name}</h2>
+                </div>
+              `;
             card.addEventListener("click", () => openItemModal(item));
             grid.appendChild(card);
         });
 
+        if (go_next) {
+            lastCursor.push(currCursor);
+            currCursor = nextCursor;
+        }
         nextCursor = json.metadata?.nextCursor || null;
         renderPagination();
     }
@@ -283,18 +300,41 @@
         const containerBottom = document.getElementById("paginationBottom");
         containerTop.innerHTML = containerBottom.innerHTML = "";
 
-        if (nextCursor) {
-            const nextBtn = document.createElement("button");
-            nextBtn.textContent = "Next →";
-            nextBtn.className = "px-3 py-1 rounded text-sm border text-white border-gray-700 hover:bg-gray-700";
-            const bottomBtn = nextBtn.cloneNode(true);
+        if (lastCursor.length > 0) {
+            const topPrevBtn = document.createElement("button");
+            topPrevBtn.textContent = "Prev";
+            topPrevBtn.className = "px-4 py-1 rounded text-sm border text-white border-gray-700 hover:bg-gray-700";
 
-            nextBtn.addEventListener("click", () => fetchAndRender(nextCursor));
-            bottomBtn.addEventListener("click", () => fetchAndRender(nextCursor));
+            let cursor = lastCursor[lastCursor.length - 1];
+            const botPrevBtn = topPrevBtn.cloneNode(true);
+            topPrevBtn.addEventListener("click", () => {
+                lastCursor.pop();
+                fetchAndRender(cursor, false);
+            });
+            botPrevBtn.addEventListener("click", () => {
+                lastCursor.pop();
+                fetchAndRender(cursor, false);
+            });
 
-            containerTop.appendChild(nextBtn);
-            containerBottom.appendChild(bottomBtn);
+            containerTop.appendChild(topPrevBtn);
+            containerBottom.appendChild(botPrevBtn);
         }
+
+        if (nextCursor) {
+            const topNextBtn = document.createElement("button");
+            topNextBtn.textContent = "Next";
+            topNextBtn.className = "px-4 py-1 rounded text-sm border text-white border-gray-700 hover:bg-gray-700";
+
+            const botNextBtn = topNextBtn.cloneNode(true);
+
+            topNextBtn.addEventListener("click", () => fetchAndRender(nextCursor));
+            botNextBtn.addEventListener("click", () => fetchAndRender(nextCursor));
+
+            containerTop.appendChild(topNextBtn);
+            containerBottom.appendChild(botNextBtn);
+        }
+
+
     }
 
     async function openItemModal(item) {
@@ -361,7 +401,7 @@
                     const download_res = await fetch(url);
                     const res_value = await download_res.json();
                     if (res_value.err) {
-                        alert(res_value.err);
+                        alert("ERROR!" + res_value.err);
                     } else {
                         alert(res_value.msg);
                     }

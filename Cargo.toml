@@ -24,7 +24,7 @@ jwalk = "0.8"
 #sha2 = "0.11.0-rc"
 blake3 = "1.8"
 #hex = "0.4"
-reqwest = { version = "0.12", features = ["blocking", "json", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "stream", "rustls-tls"] }
 dotenvy = "0.15"
 infer = "0.19"
 

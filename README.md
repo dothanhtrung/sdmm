@@ -8,7 +8,7 @@ Stable Diffusion Models Manager
 [![Gitlab](https://img.shields.io/badge/gitlab-%23181717.svg?style=for-the-badge&logo=gitlab&logoColor=white)](https://gitlab.com/kimtinh/sdmm)
 [![Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/dothanhtrung/sdmm)
 
-[![](https://img.youtube.com/vi/85oTHZkGkZU/hqdefault.jpg)](https://www.youtube.com/embed/85oTHZkGkZU)
+[![](https://img.youtube.com/vi/85oTHZkGkZU/maxresdefault.jpg)](https://youtu.be/85oTHZkGkZU)
 
 </div>
 

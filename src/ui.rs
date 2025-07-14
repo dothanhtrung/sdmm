@@ -9,7 +9,7 @@ use actix_web_lab::extract::Query;
 use tera::Tera;
 
 pub fn scope_config(cfg: &mut web::ServiceConfig) {
-    let tera = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/res/html/**/*")).unwrap();
+    let tera = Tera::new("res/html/**/*").unwrap();
     cfg.app_data(Data::new(tera))
         .service(index)
         .service(get_item)
@@ -21,8 +21,8 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
             "/assets",
             concat!(env!("CARGO_MANIFEST_DIR"), "/res/assets"),
         ))
-        .service(Files::new("/css", concat!(env!("CARGO_MANIFEST_DIR"), "/res/css")))
-        .service(Files::new("/js", concat!(env!("CARGO_MANIFEST_DIR"), "/res/js")));
+        .service(Files::new("/css", "res/css"))
+        .service(Files::new("/js", "res/js"));
 }
 
 #[get("/")]

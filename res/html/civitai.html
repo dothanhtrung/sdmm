@@ -165,6 +165,7 @@
             <h2 id="modalTitle" class="text-2xl font-bold text-white mb-4"></h2>
             <div id="versionTabs" class="flex gap-2 mb-4 flex-wrap"></div>
             <div id="versionContent"></div>
+            <div id="modelDescription"></div>
         </div>
     </div>
 </main>
@@ -269,7 +270,7 @@
             if (firstImage.type === "image") {
                 preview = `<img src="${previewImage}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">`;
             } else {
-                preview = `<video class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100" controls>
+                preview = `<video class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100" controls muted>
                     <source src="${previewImage}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>`;
@@ -339,6 +340,9 @@
 
     async function openItemModal(item) {
         document.getElementById("modalTitle").textContent = item.name;
+        const desc = document.getElementById("modelDescription");
+        desc.innerHTML = item.description || "";
+
         const tabs = document.getElementById("versionTabs");
         const content = document.getElementById("versionContent");
         tabs.innerHTML = content.innerHTML = "";
@@ -431,24 +435,58 @@
         const previewWrapper = document.createElement("div");
         previewWrapper.className = "flex flex-col gap-2 mb-6";
         // Main image area
-        const mainImage = document.createElement("img");
-        mainImage.className = "w-full max-h-[500px] object-contain rounded border border-gray-700 bg-black";
-        mainImage.src = version.images?.[0]?.url || ""; // default to first image
+        let mainImage = document.createElement("img");
+        let mainVideo = document.createElement("video");
+        mainVideo.controls = true;
+        mainVideo.muted = true;
+        mainVideo.className = mainImage.className = "w-full max-h-[500px] object-contain rounded border border-gray-700 bg-black";
+        mainVideo.src = mainImage.src = version.images?.[0]?.url || ""; // default to first image
+        if (version.images?.[0]?.type === "video") {
+            mainVideo.classList.remove("hidden");
+            mainImage.classList.add("hidden");
+        } else {
+            mainImage.classList.remove("hidden");
+            mainVideo.classList.add("hidden");
+        }
         // Thumbnail row
         const thumbnailRow = document.createElement("div");
         thumbnailRow.className = "flex gap-2 overflow-x-auto";
         version.images?.forEach(img => {
-            const thumb = document.createElement("img");
-            thumb.src = img.url;
-            thumb.className = "h-20 w-auto rounded border border-gray-600 cursor-pointer hover:border-purple-400";
-            thumb.addEventListener("click", () => {
-                mainImage.src = img.url;
-            });
-            thumbnailRow.appendChild(thumb);
-        });
+                const thumbImg = document.createElement("img");
+                const thumbVideo = document.createElement("video");
+                thumbVideo.src = thumbImg.src = img.url;
+                thumbVideo.className = thumbImg.className = "h-20 w-auto rounded border border-gray-600 cursor-pointer hover:border-purple-400";
+
+                if (img.type === "video") {
+                    thumbVideo.classList.remove("hidden");
+                    thumbImg.classList.add("hidden");
+                    thumbVideo.addEventListener("click", () => {
+                        mainImage.classList.add("hidden");
+                        mainVideo.classList.remove("hidden");
+                        mainVideo.src = img.url;
+                    });
+                } else {
+                    thumbImg.classList.remove("hidden");
+                    thumbVideo.classList.add("hidden");
+                    thumbImg.addEventListener("click", () => {
+                        mainImage.classList.remove("hidden");
+                        mainVideo.classList.add("hidden");
+                        mainImage.src = img.url;
+                    });
+                }
+                thumbnailRow.appendChild(thumbVideo);
+                thumbnailRow.appendChild(thumbImg);
+            }
+        )
+        ;
         previewWrapper.appendChild(mainImage);
+        previewWrapper.appendChild(mainVideo);
         previewWrapper.appendChild(thumbnailRow);
         container.appendChild(previewWrapper);
+
+        const description = document.createElement("div");
+        description.innerHTML = version.description || "";
+        container.appendChild(description);
     }
 
     document.getElementById("searchForm").addEventListener("submit", function (e) {

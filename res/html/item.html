@@ -54,7 +54,13 @@
 
                     <div><strong class="text-purple-400">Civitai:</strong><br>
                         <div class="border border-gray-800">
-                            <a id="item-civitai" class="break-all text-green-300"></a>
+                            <a id="item-civitai" class="break-all"></a>
+                        </div>
+                    </div>
+
+                    <div><strong class="text-purple-400">Description:</strong><br>
+                        <div class="border border-gray-800">
+                            <a id="item-description" class="break-all text-green-300"></a>
                         </div>
                     </div>
 
@@ -165,6 +171,7 @@
             document.getElementById("item-model").textContent = info.model?.name || "";
             document.getElementById("item-path").textContent = item.path || "";
             document.getElementById("item-trained-words").textContent = (info.trainedWords || []).join(" ");
+            document.getElementById("item-description").innerHTML = item.description || "";
 
             const modelId = info.modelId || "";
             if (modelId !== "") {

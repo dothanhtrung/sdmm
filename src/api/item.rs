@@ -1,7 +1,7 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
 use crate::api::{CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
-use crate::civitai::{download_file, file_type, get_extension_from_url, get_model_info, FileType, PREVIEW_EXT};
+use crate::civitai::{download_file, file_type, get_extension_from_url, get_item_info, FileType, PREVIEW_EXT};
 use crate::config::Config;
 use crate::db::tag::{update_item_note, update_tag_item, TagCount};
 use crate::db::DBPool;
@@ -46,6 +46,7 @@ struct ModelInfo {
     preview: String,
     video_preview: Option<String>,
     info: String,
+    description: String,
     note: String,
 }
 
@@ -119,12 +120,13 @@ async fn get_items(
 
     let mut item_ids = HashSet::new();
     for item in items {
-        let (model_url, json_url, mut preview_url) = get_abs_path(&config, &item.base_label, &item.path);
+        let (model_url, json_url, model_json_url, mut preview_url) =
+            get_abs_path(&config, &item.base_label, &item.path);
 
         let mut video_preview = None;
 
-        let info = fs::read_to_string(&json_url).await.unwrap_or_default();
-        let v: Value = serde_json::from_str(info.as_str()).unwrap_or_default();
+        let item_info = fs::read_to_string(&json_url).await.unwrap_or_default();
+        let v: Value = serde_json::from_str(item_info.as_str()).unwrap_or_default();
         if let Some(url) = v["images"][0]["url"].as_str() {
             if let Some(ext) = get_extension_from_url(url) {
                 let mut abs_preview = PathBuf::from(&model_url);
@@ -144,6 +146,10 @@ async fn get_items(
             preview_url.clear();
         }
 
+        let model_info = fs::read_to_string(&model_json_url).await.unwrap_or_default();
+        let model_parsed: Value = serde_json::from_str(model_info.as_str()).unwrap_or_default();
+        let description = model_parsed["description"].as_str().unwrap_or_default().to_string();
+
         item_ids.insert(item.id);
 
         ret.push(ModelInfo {
@@ -152,7 +158,8 @@ async fn get_items(
             path: model_url,
             preview: preview_url,
             video_preview,
-            info,
+            info: item_info,
+            description,
             note: item.note.clone(),
         })
     }
@@ -186,7 +193,7 @@ async fn saved_location(
 
     if let Some(blake3) = query_params.blake3.as_ref() {
         if let Ok(item) = db::item::get_by_hash(&db_pool.sqlite_pool, blake3.to_lowercase().as_str()).await {
-            let (path, _, _) = get_abs_path(&config, &item.base_label, &item.path);
+            let (path, _, _, _) = get_abs_path(&config, &item.base_label, &item.path);
             let path = PathBuf::from(path);
             let path = path
                 .parent()
@@ -274,7 +281,7 @@ async fn civitai_download(
             return;
         }
 
-        if let Err(e) = get_model_info(&path, &client, &headers, Some(params.blake3.clone()), &config).await {
+        if let Err(e) = get_item_info(&path, &client, &headers, Some(params.blake3.clone()), &config).await {
             error!("Failed to get model info: {}", e);
             return;
         }
@@ -381,8 +388,9 @@ fn guess_saved_location(base_path: &str, model_type: &str) -> String {
 }
 
 /// Return abs path of (model, json) and http path of preview
-fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String, String) {
-    let (mut model, mut json, mut preview) = (String::new(), String::new(), String::new());
+fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String, String, String) {
+    let (mut model, mut json, mut model_json, mut preview) =
+        (String::new(), String::new(), String::new(), String::new());
     if let Some(base_path) = config.model_paths.get(label) {
         let base_path = PathBuf::from(base_path);
         let model_path = base_path.join(rel_path);
@@ -392,11 +400,15 @@ fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String
         json_path.set_extension("json");
         json = json_path.to_str().unwrap_or_default().to_string();
 
+        let mut model_json_path = model_path.clone();
+        model_json_path.set_extension("model.json");
+        model_json = model_json_path.to_str().unwrap_or_default().to_string();
+
         let img_path = PathBuf::from(format!("/{}{}", BASE_PATH_PREFIX, label));
         let mut preview_path = img_path.join(rel_path);
         preview_path.set_extension(PREVIEW_EXT);
         preview = preview_path.to_str().unwrap_or_default().to_string();
     }
 
-    (model, json, preview)
+    (model, json, model_json, preview)
 }

@@ -1,7 +1,8 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
-use crate::civitai::{CivitaiFileMetadata, CivitaiModel};
+use crate::civitai::CivitaiFileMetadata;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::{FromRow, SqlitePool};
 use std::collections::HashSet;
 
@@ -140,7 +141,7 @@ pub async fn add_tag_from_model_info(
     pool: &SqlitePool,
     item: i64,
     extra_tags: &Vec<String>,
-    model_info: &CivitaiModel,
+    model_info: &Value,
     file_metadata: &CivitaiFileMetadata,
 ) -> Result<(), sqlx::Error> {
     let mut tags = Vec::new();
@@ -148,13 +149,22 @@ pub async fn add_tag_from_model_info(
         tags.push(tag.clone().replace(" ", "_").to_lowercase());
     }
 
-    tags.push(model_info.model_type.clone().replace(" ", "_").to_lowercase());
-    if model_info.nsfw {
+    let nsfw = model_info["nsfw"].as_bool().unwrap_or(false);
+    let poi = model_info["poi"].as_bool().unwrap_or(false);
+    let model_type = model_info["type"].as_str().unwrap_or_default();
+    tags.push(model_type.replace(" ", "_").to_lowercase());
+    if nsfw {
         tags.push(String::from("nsfw"));
     }
-    if model_info.poi {
+    if poi {
         tags.push(String::from("poi"));
     }
+    if let Some(json_tags) = model_info["tags"].as_array() {
+        for tag in json_tags {
+            tags.push(tag.as_str().unwrap_or_default().replace(" ", "_").to_lowercase());
+        }
+    }
+
     tags.push(file_metadata.format.clone().replace(" ", "_").to_lowercase());
     if let Some(fp) = &file_metadata.fp {
         tags.push(fp.to_string());

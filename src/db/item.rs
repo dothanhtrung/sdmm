@@ -42,7 +42,6 @@ pub async fn insert_or_update(
     path: &str,
     base_label: &str,
     blake3: &str,
-    model_name: &str,
     updated_at_ms: i64,
 ) -> Result<i64, sqlx::Error> {
     let ret_id;
@@ -56,9 +55,8 @@ pub async fn insert_or_update(
     .await
     {
         sqlx::query!(
-            r#"UPDATE item SET is_checked=true, blake3=?, model_name =?, base_label=?, name=?, updated_at = ? WHERE id = ?"#,
+            r#"UPDATE item SET is_checked=true, blake3=?, base_label=?, name=?, updated_at = ? WHERE id = ?"#,
             blake3,
-            model_name,
             base_label,
             name,
             updated_at_ms,
@@ -69,9 +67,8 @@ pub async fn insert_or_update(
         ret_id = id;
     } else {
         ret_id = sqlx::query!(
-            r#"INSERT INTO item (name, model_name, path, base_label, blake3, updated_at) VALUES (?, ?, ?, ?, ?, ?) "#,
+            r#"INSERT INTO item (name, path, base_label, blake3, updated_at) VALUES (?, ?, ?, ?, ?) "#,
             name,
-            model_name,
             path,
             base_label,
             blake3,

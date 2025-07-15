@@ -5,7 +5,7 @@ mod item;
 mod maintenance;
 mod tag;
 
-use crate::civitai::{calculate_blake3, CivitaiFileMetadata, CivitaiModel};
+use crate::civitai::{calculate_blake3, CivitaiFileMetadata};
 use crate::db::item::insert_or_update;
 use crate::db::tag::add_tag_from_model_info;
 use crate::db::DBPool;
@@ -57,21 +57,26 @@ fn get_relative_path(base_path: &str, path: &Path) -> Result<String, anyhow::Err
 }
 
 async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_path: &str) {
-    let mut json_file = PathBuf::from(path);
-    json_file.set_extension("json");
-    let info = fs::read_to_string(&json_file).await.unwrap_or_default();
-    let v: Value = serde_json::from_str(&info).unwrap_or_default();
+    let mut item_json_file = PathBuf::from(path);
+    item_json_file.set_extension("json");
+    let mut model_json_file = PathBuf::from(path);
+    model_json_file.set_extension("model.json");
+    let item_info = fs::read_to_string(&item_json_file).await.unwrap_or_default();
+    let model_info = fs::read_to_string(&model_json_file).await.unwrap_or_default();
 
-    let base_model = v["baseModel"].as_str().unwrap_or_default();
+    let item_parsed: Value = serde_json::from_str(&item_info).unwrap_or_default();
+    let model_parsed: Value = serde_json::from_str(&model_info).unwrap_or_default();
 
-    let mut blake3 = v["files"][0]["hashes"]["BLAKE3"]
+    let base_model = item_parsed["baseModel"].as_str().unwrap_or_default();
+
+    let mut blake3 = item_parsed["files"][0]["hashes"]["BLAKE3"]
         .as_str()
         .unwrap_or_default()
         .to_string()
         .to_lowercase();
     let mut file_metadata =
-        serde_json::from_value::<CivitaiFileMetadata>(v["files"][0]["metadata"].clone()).unwrap_or_default();
-    if let Some(files) = v["files"].as_array() {
+        serde_json::from_value::<CivitaiFileMetadata>(item_parsed["files"][0]["metadata"].clone()).unwrap_or_default();
+    if let Some(files) = item_parsed["files"].as_array() {
         // If there are more than 1 file, find the metadata by hash
         if files.len() > 1 {
             blake3 = calculate_blake3(path).unwrap_or_default().to_lowercase();
@@ -84,7 +89,6 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
             }
         }
     }
-    let model_info = serde_json::from_value::<CivitaiModel>(v["model"].clone()).unwrap_or_default();
     let name = path
         .file_name()
         .unwrap_or_default()
@@ -106,14 +110,13 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
         relative_path,
         label,
         blake3.as_str(),
-        &model_info.name,
         modified_time as i64,
     )
     .await
     {
         Ok(id) => {
             let tags = vec![base_model.to_string()];
-            if let Err(e) = add_tag_from_model_info(&db_pool.sqlite_pool, id, &tags, &model_info, &file_metadata).await
+            if let Err(e) = add_tag_from_model_info(&db_pool.sqlite_pool, id, &tags, &model_parsed, &file_metadata).await
             {
                 error!("Failed to insert tag: {}", e);
             }

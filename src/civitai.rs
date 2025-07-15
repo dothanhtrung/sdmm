@@ -35,15 +35,6 @@ pub struct CivitaiFileMetadata {
     pub size: Option<String>,
 }
 
-#[derive(Deserialize, Default)]
-pub struct CivitaiModel {
-    pub name: String,
-    pub nsfw: bool,
-    pub poi: bool,
-    #[serde(rename = "type")]
-    pub model_type: String,
-}
-
 pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
     let valid_ext = config.extensions.iter().collect::<HashSet<_>>();
     let client = Client::new();
@@ -75,7 +66,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                     tokio::spawn(async move {
                         info!("Update model info: {}", entry.path().display());
                         if let Ok(_permit) = semaphore.acquire().await {
-                            if let Err(e) = get_model_info(&path, &client, &headers, None, &config).await {
+                            if let Err(e) = get_item_info(&path, &client, &headers, None, &config).await {
                                 error!("Failed to get model info: {}", e);
                             }
                         }
@@ -88,7 +79,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn get_model_info(
+pub async fn get_item_info(
     path: &Path,
     client: &Client,
     headers: &HeaderMap,
@@ -114,8 +105,31 @@ pub async fn get_model_info(
         info = serde_json::from_reader(File::open(&json_path)?)?;
     }
 
+    if let Some(model_id) = info["modelId"].as_i64() {
+        get_model_info(path, client, headers, model_id, config.civitai.overwrite_json).await?;
+    }
+
     download_preview(client, headers, config, &info, path).await?;
 
+    Ok(())
+}
+
+async fn get_model_info(path: &Path,client: &Client,
+                  headers: &HeaderMap,model_id: i64, overwrite:bool) -> anyhow::Result<()>{
+    let info: Value;
+    let mut json_path = PathBuf::from(path);
+    json_path.set_extension("model.json");
+    if !json_path.exists() || overwrite {
+        let url = format!("https://civitai.com/api/v1/models/{model_id}");
+        // TODO: clean code
+        info = client.get(url).headers(headers.clone()).send().await?.json().await?;
+        if let Some(err) = info["error"].as_str() {
+            if !err.is_empty() {
+                return Err(anyhow::anyhow!(err.to_string()));
+            }
+        }
+        save_info(&json_path, &info).await?;
+    }
     Ok(())
 }
 

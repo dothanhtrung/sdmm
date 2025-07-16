@@ -2,7 +2,7 @@
 
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::SqlitePool;
-use std::collections::HashSet;
+use indexmap::IndexSet;
 
 #[derive(sqlx::FromRow, Eq, PartialEq, Hash)]
 pub struct Item {
@@ -127,7 +127,7 @@ pub async fn search(
     tag_only: bool,
 ) -> Result<(Vec<Item>, i64), sqlx::Error> {
     //TODO: Search in note too
-    let mut items = HashSet::new();
+    let mut items = IndexSet::new();
     let mut count = 0;
     if !tag_only {
         let items_by_name = sqlx::query_as!(

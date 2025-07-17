@@ -3,15 +3,15 @@
 use crate::api::TRASH_DIR;
 use crate::civitai::update_model_info;
 use crate::db::DBPool;
-use crate::{api, db, ConfigData};
+use crate::{api, db, ConfigData, StopHandle};
 use actix_web::web::Data;
-use actix_web::{get, rt, web, Responder};
+use actix_web::{get, rt, web, HttpResponse, Responder};
 use jwalk::{Parallelism, WalkDir};
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::fs;
-use tokio::sync::Semaphore;
+use tokio::sync::{RwLock, Semaphore};
 use tracing::{error, info};
 
 pub fn scope(cfg: &mut web::ServiceConfig) {
@@ -20,6 +20,8 @@ pub fn scope(cfg: &mut web::ServiceConfig) {
             .service(scan_folder)
             .service(remove_orphan)
             .service(sync_civitai)
+            .service(restart)
+            .service(force_restart)
             .service(empty_trash),
     );
 }
@@ -64,6 +66,22 @@ async fn empty_trash(config: Data<ConfigData>) -> impl Responder {
         }
     }
     web::Json("")
+}
+
+#[get("restart")]
+async fn restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder {
+    let mut stop_handle = stop_handle.write().await;
+    stop_handle.is_restarted = true;
+    stop_handle.stop(true);
+    HttpResponse::NoContent().finish()
+}
+
+#[get("force_restart")]
+async fn force_restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder {
+    let mut stop_handle = stop_handle.write().await;
+    stop_handle.is_restarted = true;
+    stop_handle.stop(false);
+    HttpResponse::NoContent().finish()
 }
 
 async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {

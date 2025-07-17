@@ -171,7 +171,7 @@ pub async fn search(
         );
         let search_by_tags: Vec<Item> = sqlx::query_as(&query).fetch_all(pool).await?;
 
-        let count_query = format!("SELECT count(*) {} ", condition);
+        let count_query = format!("SELECT COUNT(*) FROM (SELECT item.id {})", condition);
         let tags_count: i64 = sqlx::query_scalar(&count_query).fetch_one(pool).await?;
 
         count += tags_count;

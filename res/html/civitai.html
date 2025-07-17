@@ -243,7 +243,7 @@
         });
 
 
-        const url = new URL("https://civitai.com/api/v1/models?token={{config.api_key}}");
+        const url = new URL("https://civitai.com/api/v1/models?token=" + config.civitai.api_key);
         url.searchParams.set("limit", limit);
         url.searchParams.set("query", query);
         url.searchParams.set("sort", sort);

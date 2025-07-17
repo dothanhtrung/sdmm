@@ -277,7 +277,7 @@ async fn civitai_download(
         info!("Downloading file {}: {}", params.name, params.url);
         // TODO: Verify checksum of downloaded file
         if let Err(e) = download_file(params.url.as_str(), &path, &client, &headers, &config.model_paths).await {
-            error!("Failed to download file: {}", e);
+            error!("Failed to download {}: {}", params.url.as_str(), e);
             return;
         }
 

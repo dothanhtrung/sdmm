@@ -1,8 +1,8 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
+use indexmap::IndexSet;
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::SqlitePool;
-use indexmap::IndexSet;
 
 #[derive(sqlx::FromRow, Eq, PartialEq, Hash)]
 pub struct Item {
@@ -157,8 +157,11 @@ pub async fn search(
           LEFT JOIN tag_item ON item.id = tag_item.item
           LEFT JOIN tag ON tag.id = tag_item.tag
           WHERE item.is_checked = true
-            AND tag.name IN ('{}')",
-            tags.join("','")
+            AND tag.name IN ('{}')
+          GROUP BY item.id
+          HAVING COUNT(DISTINCT tag.id) = {}",
+            tags.join("','"),
+            tags.len()
         );
         let query = format!(
             "SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label {} ORDER BY item.updated_at DESC LIMIT {} OFFSET {}",

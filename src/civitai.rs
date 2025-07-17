@@ -74,6 +74,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                 }
             }
         }
+        info!("Finished sync Civitai");
     }
 
     Ok(())

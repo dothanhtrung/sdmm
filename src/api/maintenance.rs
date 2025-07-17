@@ -107,5 +107,6 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
                 }
             }
         }
+        info!("Finished scanning {}", label);
     }
 }

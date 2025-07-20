@@ -44,40 +44,20 @@ pub async fn insert_or_update(
     blake3: &str,
     updated_at_ms: i64,
 ) -> Result<i64, sqlx::Error> {
-    let ret_id;
-
-    if let Ok(id) = sqlx::query_scalar!(
-        r#"SELECT id FROM item WHERE path = ? AND base_label = ?"#,
-        path,
-        base_label
-    )
-    .fetch_one(pool)
-    .await
-    {
-        sqlx::query!(
-            r#"UPDATE item SET is_checked=true, blake3=?, base_label=?, name=?, updated_at = ? WHERE id = ?"#,
-            blake3,
-            base_label,
-            name,
-            updated_at_ms,
-            id,
-        )
-        .execute(pool)
-        .await?;
-        ret_id = id;
-    } else {
-        ret_id = sqlx::query!(
-            r#"INSERT INTO item (name, path, base_label, blake3, updated_at) VALUES (?, ?, ?, ?, ?) "#,
+    let ret_id = sqlx::query!(r#"
+        INSERT INTO item (name, path, base_label, blake3, updated_at) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (path, base_label) DO UPDATE SET
+            is_checked=true,
+            blake3=excluded.blake3,
+            base_label=excluded.base_label,
+            name=excluded.name,
+            updated_at = excluded.updated_at
+        RETURNING id"#,
             name,
             path,
             base_label,
             blake3,
-            updated_at_ms,
-        )
-        .execute(pool)
-        .await?
-        .last_insert_rowid();
-    }
+            updated_at_ms,).fetch_one(pool).await?.id;
 
     Ok(ret_id)
 }
@@ -165,9 +145,7 @@ pub async fn search(
         );
         let query = format!(
             "SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label {} ORDER BY item.updated_at DESC LIMIT {} OFFSET {}",
-            condition,
-            limit,
-            offset
+            condition, limit, offset
         );
         let search_by_tags: Vec<Item> = sqlx::query_as(&query).fetch_all(pool).await?;
 

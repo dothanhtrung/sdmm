@@ -115,8 +115,13 @@ pub async fn get_item_info(
     Ok(())
 }
 
-async fn get_model_info(path: &Path,client: &Client,
-                  headers: &HeaderMap,model_id: i64, overwrite:bool) -> anyhow::Result<()>{
+async fn get_model_info(
+    path: &Path,
+    client: &Client,
+    headers: &HeaderMap,
+    model_id: i64,
+    overwrite: bool,
+) -> anyhow::Result<()> {
     let info: Value;
     let mut json_path = PathBuf::from(path);
     json_path.set_extension("model.json");
@@ -140,34 +145,64 @@ pub async fn download_file(
     client: &Client,
     headers: &HeaderMap,
     base_paths: &HashMap<String, String>,
+    blake3: &str,
+    max_retry: usize,
 ) -> anyhow::Result<()> {
     if path.exists() {
-        let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_millis();
-        let mut trash_path = PathBuf::from(path.parent().unwrap_or(Path::new("."))).join(TRASH_DIR);
-        for (_, base_path) in base_paths.iter() {
-            if path.starts_with(base_path) {
-                trash_path = PathBuf::from(base_path).join(TRASH_DIR);
+        if let Ok(file_hash) = calculate_blake3(path)
+            && blake3 == file_hash
+        {
+            info!("File already exists with same hash: {}", path.display());
+            return Ok(());
+        } else {
+            let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_millis();
+            let mut trash_path = PathBuf::from(path.parent().unwrap_or(Path::new("."))).join(TRASH_DIR);
+            for (_, base_path) in base_paths.iter() {
+                if path.starts_with(base_path) {
+                    trash_path = PathBuf::from(base_path).join(TRASH_DIR);
+                }
             }
+            let mut new_name = PathBuf::from(path);
+            new_name.set_extension(format!(
+                "{}.bakup.{}",
+                path.extension().unwrap_or_default().to_str().unwrap_or_default(),
+                timestamp
+            ));
+            trash_path = trash_path.join(new_name.file_name().unwrap_or_default());
+            fs::rename(path, trash_path).await?;
         }
-        let mut new_name = PathBuf::from(path);
-        new_name.set_extension(format!(
-            "{}.bakup.{}",
-            path.extension().unwrap_or_default().to_str().unwrap_or_default(),
-            timestamp
-        ));
-        trash_path = trash_path.join(new_name.file_name().unwrap_or_default());
-        fs::rename(path, trash_path).await?;
     }
 
+    let mut hasher = blake3::Hasher::new();
+    let mut downloaded_bytes = 0;
+    let mut retried = 0;
     let mut file = File::create(path)?;
-    let response = client.get(url).headers(headers.clone()).send().await?;
-    let mut stream = response.bytes_stream();
-    while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result?;
-        file.write_all(&chunk)?;
+    let mut range_headers = headers.clone();
+    loop {
+        if let Ok(response) = client.get(url).headers(range_headers.clone()).send().await {
+            let mut stream = response.bytes_stream();
+            while let Some(chunk_result) = stream.next().await {
+                if let Ok(chunk) = chunk_result {
+                    if file.write_all(&chunk).is_ok() {
+                        hasher.update(&chunk);
+                        downloaded_bytes += chunk.len();
+                    }
+                }
+            }
+        }
+        let file_hash = hasher.finalize();
+        if blake3.is_empty() || blake3 == file_hash.to_hex().to_string().to_lowercase() {
+            break;
+        }
+        if retried > max_retry {
+            return Err(anyhow::anyhow!("Maximum retried download"));
+        }
+
+        retried += 1;
+        range_headers.insert("Range", HeaderValue::from_str(&format!("bytes={}-", downloaded_bytes))?);
     }
     file.flush()?;
-    info!("File downloaded: {}", path.display());
+    info!("Finish downloading: {}", path.display());
     Ok(())
 }
 
@@ -189,7 +224,16 @@ async fn download_preview(
                 if image_path.exists() && !config.civitai.overwrite_thumbnail {
                     info!("File already exists: {}", image_path.display());
                 } else {
-                    download_file(url, image_path, client, headers, &config.model_paths).await?;
+                    download_file(
+                        url,
+                        image_path,
+                        client,
+                        headers,
+                        &config.model_paths,
+                        "",
+                        config.civitai.max_retries,
+                    )
+                    .await?;
                 }
 
                 let file_type = file_type(image_path).await;

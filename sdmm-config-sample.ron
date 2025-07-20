@@ -12,6 +12,7 @@
         overwrite_thumbnail: false,
         overwrite_json: false,
         download_dir: {},
+        max_retries: 5,
     ),
     listen_addr: "0.0.0.0",
     listen_port: 9696,

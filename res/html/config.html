@@ -59,6 +59,12 @@
                         class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Location
                 </button>
             </div>
+
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Maximum retries (when download fails)</label>
+                <input type="number" name="civitai.max_retries"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
         </div>
 
         <div class="border border-gray-600 rounded p-4">
@@ -101,6 +107,7 @@
         document.querySelector('[name="listen_port"]').value = config.listen_port || 0;
         document.querySelector('[name="api.per_page"]').value = config.api.per_page || 0;
         document.querySelector('[name="parallel"]').value = config.parallel || 0;
+        document.querySelector('[name="civitai.max_retries"]').value = config.civitai.max_retries || 0;
         document.getElementById("overwrite_thumbnail").checked = config.civitai.overwrite_thumbnail || false;
         document.getElementById("overwrite_json").checked = config.civitai.overwrite_json || false;
 
@@ -202,6 +209,7 @@
         config.civitai.api_key = form["civitai.api_key"].value;
         config.civitai.overwrite_thumbnail = form["civitai.overwrite_thumbnail"].checked;
         config.civitai.overwrite_json = form["civitai.overwrite_json"].checked;
+        config.civitai.max_retries = parseInt(form["civitai.max_retries"].value);
         config.listen_addr = form["listen_addr"].value;
         config.listen_port = parseInt(form["listen_port"].value);
         config.api.per_page = parseInt(form["api.per_page"].value);

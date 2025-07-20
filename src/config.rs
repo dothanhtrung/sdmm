@@ -81,6 +81,8 @@ pub struct CivitaiConfig {
     #[serde(default)]
     pub download_dir: HashMap<String, String>,
     #[serde(default)]
+    pub max_retries: usize,
+    #[serde(default)]
     pub search: CivitaiSearch,
 }
 
@@ -91,6 +93,7 @@ impl Default for CivitaiConfig {
             overwrite_thumbnail: false,
             overwrite_json: false,
             download_dir: HashMap::new(),
+            max_retries: 3,
             search: CivitaiSearch::default(),
         }
     }

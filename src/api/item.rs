@@ -274,14 +274,25 @@ async fn civitai_download(
     }
 
     rt::spawn(async move {
+        let blake3_lowercase = params.blake3.to_lowercase();
         info!("Downloading file {}: {}", params.name, params.url);
-        // TODO: Verify checksum of downloaded file
-        if let Err(e) = download_file(params.url.as_str(), &path, &client, &headers, &config.model_paths).await {
+
+        if let Err(e) = download_file(
+            params.url.as_str(),
+            &path,
+            &client,
+            &headers,
+            &config.model_paths,
+            blake3_lowercase.as_ref(),
+            config.civitai.max_retries,
+        )
+        .await
+        {
             error!("Failed to download {}: {}", params.url.as_str(), e);
             return;
         }
 
-        if let Err(e) = get_item_info(&path, &client, &headers, Some(params.blake3.clone()), &config).await {
+        if let Err(e) = get_item_info(&path, &client, &headers, Some(blake3_lowercase), &config).await {
             error!("Failed to get model info: {}", e);
             return;
         }

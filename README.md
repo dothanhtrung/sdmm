@@ -10,9 +10,12 @@ Stable Diffusion Models Manager
 
 [![](https://img.youtube.com/vi/85oTHZkGkZU/maxresdefault.jpg)](https://youtu.be/85oTHZkGkZU)
 
+![sdmm](https://count.getloli.com/@git_sdmm?name=git_sdmm&theme=3d-num&padding=9&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+
 </div>
 
-Standalone web app to manage your local Stable Diffusion models.
+Standalone application to manage your local Stable Diffusion models. This app is web-based so you can run on
+your cloud machine like runpod.
 
 Features:
 * [x] Manage model with tag.
@@ -33,19 +36,30 @@ Run the web server:
 
 Now you can access it at http://localhost:9696 or http://your_ip_address:9696
 
-Install
--------
+How to build
+------------
 
 Get the prebuilt binary in Release page or build it with `cargo`.
-
-Build the application:
-```shell
-cargo build --release
-```
 
 Update CSS:
 ```shell
 cd res
 npm install tailwindcss @tailwindcss/cli 
-npx @tailwindcss/cli -i ./css/tailwind_input.css -o ./css/tailwind_output.min.css --watch --minify
+npx @tailwindcss/cli -i ./css/tailwind_input.css -o ./css/tailwind_output.min.css --build --minify
 ```
+
+
+Build the application
+
+* Normal build:
+    ```shell
+    cargo build --release
+    ```
+    Output: `target/release/sdmm`.
+
+* Statically build for Linux so you can copy binary to another machine and run without worrying about dependencies:
+    ```shell
+    rustup target add x86_64-unknown-linux-musl
+    cargo build --target=x86_64-unknown-linux-musl --release
+    ```
+    Output: `target/x86_64-unknown-linux-musl/release/sdmm`

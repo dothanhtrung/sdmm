@@ -8,9 +8,8 @@ Stable Diffusion Models Manager
 [![Gitlab](https://img.shields.io/badge/gitlab-%23181717.svg?style=for-the-badge&logo=gitlab&logoColor=white)](https://gitlab.com/kimtinh/sdmm)
 [![Github](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/dothanhtrung/sdmm)
 
-[![](https://img.youtube.com/vi/85oTHZkGkZU/maxresdefault.jpg)](https://youtu.be/85oTHZkGkZU)
-
-![sdmm](https://count.getloli.com/@git_sdmm?name=git_sdmm&theme=3d-num&padding=9&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+  
+[![demo video](https://img.youtube.com/vi/85oTHZkGkZU/maxresdefault.jpg)](https://youtu.be/85oTHZkGkZU)
 
 </div>
 
@@ -63,3 +62,12 @@ Build the application
     cargo build --target=x86_64-unknown-linux-musl --release
     ```
     Output: `target/x86_64-unknown-linux-musl/release/sdmm`
+
+
+------
+
+<div align="center">
+
+![sdmm](https://count.getloli.com/@git_sdmm?name=git_sdmm&theme=3d-num&padding=9&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+
+</div>

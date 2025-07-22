@@ -99,17 +99,16 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
         for entry in WalkDir::new(base_path)
             .skip_hidden(true)
             .parallelism(parallelism.clone())
-            .follow_links(true)
+            .follow_links(false)
             .into_iter()
             .flatten()
         {
-            let path = entry.path();
+            if entry.file_type().is_file() {
+                let path = entry.path();
+                let Ok(relative_path) = api::get_relative_path(base_path, &path) else {
+                    continue;
+                };
 
-            let Ok(relative_path) = api::get_relative_path(base_path, &path) else {
-                continue;
-            };
-
-            if entry.file_type().is_file() || entry.file_type().is_symlink() {
                 let file_ext = path.extension().unwrap_or_default().to_str().unwrap_or_default();
                 if valid_ext.contains(&file_ext.to_string()) {
                     let semaphore = semaphore.clone();

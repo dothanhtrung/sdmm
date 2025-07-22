@@ -68,6 +68,6 @@ Build the application
 
 <div align="center">
 
-![sdmm](https://count.getloli.com/@git_sdmm?name=git_sdmm&theme=3d-num&padding=9&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
+![sdmm](https://count.getloli.com/@git_sdmm?name=git_sdmm&theme=random&padding=9&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
 
 </div>

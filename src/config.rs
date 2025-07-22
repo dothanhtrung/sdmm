@@ -103,6 +103,7 @@ impl Default for CivitaiConfig {
 pub struct Config {
     pub db: DBConfig,
     pub model_paths: HashMap<String, String>,
+    #[serde(default)]
     pub civitai: CivitaiConfig,
     #[serde(default)]
     pub listen_addr: String,

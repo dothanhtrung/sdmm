@@ -2,6 +2,7 @@
 
 pub mod item;
 pub mod tag;
+pub mod job;
 
 use crate::config::DBConfig;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};

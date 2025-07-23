@@ -47,6 +47,10 @@ npm install tailwindcss @tailwindcss/cli
 npx @tailwindcss/cli -i ./css/tailwind_input.css -o ./css/tailwind_output.min.css --build --minify
 ```
 
+Migrate database:
+```shell
+sqlx migrate run
+```
 
 Build the application
 

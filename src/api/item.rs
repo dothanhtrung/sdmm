@@ -3,6 +3,7 @@
 use crate::api::{CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
 use crate::civitai::{download_file, file_type, get_extension_from_url, get_item_info, FileType, PREVIEW_EXT};
 use crate::config::Config;
+use crate::db::job::{add_job, update_job, JobState};
 use crate::db::tag::{update_item_note, update_tag_item, TagCount};
 use crate::db::DBPool;
 use crate::{api, db, ConfigData, BASE_PATH_PREFIX};
@@ -274,6 +275,11 @@ async fn civitai_download(
     }
 
     rt::spawn(async move {
+        let id = add_job(
+            &db_pool.sqlite_pool,
+            format!("Download {}", params.url.as_str()).as_str(),
+            "",
+        ).await;
         let blake3_lowercase = params.blake3.to_lowercase();
         info!("Downloading file {}: {}", params.name, params.url);
 
@@ -289,7 +295,13 @@ async fn civitai_download(
         .await
         {
             error!("Failed to download {}: {}", params.url.as_str(), e);
+            if let Ok(id) = id {
+                let _ = update_job(&db_pool.sqlite_pool, id, format!("{e}").as_str(), JobState::Failed).await;
+            }
             return;
+        }
+        if let Ok(id) = id {
+            let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
         }
 
         if let Err(e) = get_item_info(&path, &client, &headers, Some(blake3_lowercase), &config).await {

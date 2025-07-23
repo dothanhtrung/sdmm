@@ -44,6 +44,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
         HeaderValue::from_str(&format!("Bearer {}", config.civitai.api_key))?,
     );
 
+    let mut handles = Vec::new();
     let semaphore = Arc::new(Semaphore::new(config.parallel));
     let parallelism = Parallelism::RayonNewPool(config.parallel);
     for (_, base_path) in config.model_paths.iter() {
@@ -63,7 +64,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                     let config = config.clone();
                     let semaphore = semaphore.clone();
 
-                    tokio::spawn(async move {
+                    let handle = tokio::spawn(async move {
                         info!("Update model info: {}", entry.path().display());
                         if let Ok(_permit) = semaphore.acquire().await {
                             if let Err(e) = get_item_info(&path, &client, &headers, None, &config).await {
@@ -71,10 +72,17 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                             }
                         }
                     });
+                    handles.push(handle);
                 }
             }
         }
         info!("Finished sync Civitai");
+    }
+
+    for handle in handles {
+        if let Err(e) = handle.await {
+            error!("Failed to sync Civitai: {}", e);
+        }
     }
 
     Ok(())

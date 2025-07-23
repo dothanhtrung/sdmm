@@ -2,6 +2,7 @@
 
 use crate::api::TRASH_DIR;
 use crate::civitai::update_model_info;
+use crate::db::job::{add_job, update_job, JobState};
 use crate::db::DBPool;
 use crate::{api, db, ConfigData, StopHandle};
 use actix_web::web::Data;
@@ -49,8 +50,12 @@ async fn remove_orphan(db_pool: Data<DBPool>) -> impl Responder {
 #[get("sync_civitai")]
 async fn sync_civitai(config_data: Data<ConfigData>, db_pool: Data<DBPool>) -> impl Responder {
     rt::spawn(async move {
+        let id = add_job(&db_pool.sqlite_pool, "Sync Civitai", "").await;
         let config = config_data.config.read().await.clone();
         let _ = update_model_info(&config).await;
+        if let Ok(id) = id {
+            let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;       
+        }
         scan(config_data, db_pool).await;
     });
     web::Json("")
@@ -85,14 +90,20 @@ async fn force_restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder 
 }
 
 async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
+    let id = add_job(&db_pool.sqlite_pool, "Scan folder", "").await;
+    
     let config = config.config.read().await;
     let valid_ext = config.extensions.iter().collect::<HashSet<_>>();
 
     if let Err(e) = db::item::mark_obsolete_all(&db_pool.sqlite_pool).await {
-        error!("Failed to mark all item for reload: {}", e);
+        let msg = format!("Failed to mark all item for reload: {e}");
+        if let Ok(id) = id {
+            let _ = update_job(&db_pool.sqlite_pool, id, msg.as_str(), JobState::Failed).await;
+        }
+        error!(msg);
         return;
     }
-
+    let mut handles = Vec::new();
     let semaphore = Arc::new(Semaphore::new(config.parallel));
     for (label, base_path) in config.model_paths.iter() {
         let parallelism = Parallelism::RayonNewPool(config.parallel);
@@ -115,15 +126,26 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
                     let db_pool = db_pool.clone();
                     let label = label.clone();
 
-                    tokio::spawn(async move {
+                    let handle = tokio::spawn(async move {
                         if let Ok(_permit) = semaphore.acquire().await {
                             info!("Found {path:?}");
                             api::save_model_info(&db_pool, &path, label.as_str(), relative_path.as_str()).await;
                         }
                     });
+                    handles.push(handle);
                 }
             }
         }
         info!("Finished scanning {}", label);
+    }
+
+    for handle in handles {
+        if let Err(e) = handle.await {
+            error!("Failed to scan model: {e}");
+        }
+    }
+    
+    if let Ok(id) = id {
+        let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
     }
 }

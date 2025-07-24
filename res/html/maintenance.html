@@ -81,6 +81,14 @@
         sendAction("/api/maintenance/remove_orphan");
     })
 
+    document.getElementById("restart").addEventListener("click", () => {
+        sendAction("/api/maintenance/restart");
+    })
+
+    document.getElementById("force_restart").addEventListener("click", () => {
+        sendAction("/api/maintenance/force_restart");
+    })
+
     async function fetchTags() {
         const grid = document.getElementById("all-tags");
         grid.innerHTML = "";

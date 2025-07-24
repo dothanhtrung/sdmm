@@ -1,4 +1,4 @@
-create table job
+create table if not exists job
 (
     id         integer                           not null
         constraint job_pk

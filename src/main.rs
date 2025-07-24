@@ -24,6 +24,7 @@ mod ui;
 use crate::civitai::update_model_info;
 use crate::config::Config;
 use crate::db::DBPool;
+use crate::ui::Broadcaster;
 use actix_cors::Cors;
 use actix_files::Files;
 use actix_web::dev::ServerHandle;
@@ -89,6 +90,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let stop_handle = Arc::new(RwLock::new(StopHandle::default()));
+
     loop {
         let db_pool = match DBPool::init(&config.db).await {
             Ok(pool) => pool,
@@ -104,16 +106,18 @@ async fn main() -> anyhow::Result<()> {
             config: RwLock::new(config.clone()),
             config_path: args.config.clone(),
         });
+        let broadcaster = Broadcaster::create();
 
         let srv = HttpServer::new({
             let stop_handle = stop_handle.clone();
             move || {
                 let mut app = App::new()
                     .wrap(Cors::default().allow_any_origin())
+                    .wrap(middleware::NormalizePath::trim())
                     .app_data(Data::from(stop_handle.clone()))
                     .app_data(Data::from(ref_db_pool.clone()))
                     .app_data(Data::from(config_data.clone()))
-                    .wrap(middleware::NormalizePath::trim());
+                    .app_data(Data::from(Arc::clone(&broadcaster)));
                 for (label, base_path) in model_paths.iter() {
                     app = app.service(
                         Files::new(format!("/{}{}", BASE_PATH_PREFIX, label).as_str(), base_path).show_files_listing(),

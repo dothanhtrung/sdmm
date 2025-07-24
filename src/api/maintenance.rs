@@ -4,6 +4,7 @@ use crate::api::TRASH_DIR;
 use crate::civitai::update_model_info;
 use crate::db::job::{add_job, update_job, JobState};
 use crate::db::DBPool;
+use crate::ui::{Broadcaster};
 use crate::{api, db, ConfigData, StopHandle};
 use actix_web::web::Data;
 use actix_web::{get, rt, web, HttpResponse, Responder};
@@ -28,9 +29,13 @@ pub fn scope(cfg: &mut web::ServiceConfig) {
 }
 
 #[get("scan")]
-async fn scan_folder(config: Data<ConfigData>, db_pool: Data<DBPool>) -> impl Responder {
+async fn scan_folder(
+    config: Data<ConfigData>,
+    db_pool: Data<DBPool>,
+    broadcaster: Data<Broadcaster>,
+) -> impl Responder {
     rt::spawn(async move {
-        scan(config, db_pool).await;
+        scan(config, db_pool, &broadcaster).await;
     });
     web::Json("")
 }
@@ -48,15 +53,20 @@ async fn remove_orphan(db_pool: Data<DBPool>) -> impl Responder {
 }
 
 #[get("sync_civitai")]
-async fn sync_civitai(config_data: Data<ConfigData>, db_pool: Data<DBPool>) -> impl Responder {
+async fn sync_civitai(
+    config_data: Data<ConfigData>,
+    db_pool: Data<DBPool>,
+    broadcaster: Data<Broadcaster>,
+) -> impl Responder {
     rt::spawn(async move {
         let id = add_job(&db_pool.sqlite_pool, "Sync Civitai", "").await;
         let config = config_data.config.read().await.clone();
         let _ = update_model_info(&config).await;
         if let Ok(id) = id {
-            let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;       
+            let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
         }
-        scan(config_data, db_pool).await;
+        broadcaster.info("Sync Civitai finished").await;
+        scan(config_data, db_pool, &broadcaster).await;
     });
     web::Json("")
 }
@@ -89,9 +99,9 @@ async fn force_restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder 
     HttpResponse::NoContent().finish()
 }
 
-async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
+async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>, broadcaster: &Broadcaster) {
     let id = add_job(&db_pool.sqlite_pool, "Scan folder", "").await;
-    
+
     let config = config.config.read().await;
     let valid_ext = config.extensions.iter().collect::<HashSet<_>>();
 
@@ -100,6 +110,7 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
         if let Ok(id) = id {
             let _ = update_job(&db_pool.sqlite_pool, id, msg.as_str(), JobState::Failed).await;
         }
+        broadcaster.error(format!("Scan failed. {}", &msg).as_str()).await;
         error!(msg);
         return;
     }
@@ -144,8 +155,9 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>) {
             error!("Failed to scan model: {e}");
         }
     }
-    
+
     if let Ok(id) = id {
         let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
     }
+    broadcaster.info("Scan finished").await;
 }

@@ -18,7 +18,7 @@
 <div class="w-full flex items-center justify-between shadow-md px-4 py-3">
 
     <div class="flex items-center space-x-5">
-<!--        <img src="/assets/icon.png" alt="" class="w-8 h-8"/>-->
+        <!--        <img src="/assets/icon.png" alt="" class="w-8 h-8"/>-->
         <a href="/"><span class="text-2xl font-bold">SDMM</span></a>
         <nav class="flex items-center space-x-4 ml-6">
             <a href="/" class="hover:text-white transition font-bold">Home</a>
@@ -28,3 +28,57 @@
         </nav>
     </div>
 </div>
+
+<div id="notify-container" class="fixed top-4 right-4 flex flex-col-reverse gap-2 z-50"></div>
+
+<script>
+    const container = document.getElementById("notify-container");
+
+    const levelStyles = {
+        Info: "bg-blue-500",
+        Warning: "bg-yellow-500",
+        Error: "bg-red-500"
+    };
+
+    function showToast({level, msg}) {
+        const baseClasses = "text-white text-sm px-4 py-2 rounded shadow-md transition-opacity duration-500";
+        const toast = document.createElement("div");
+
+        toast.className = `${baseClasses} ${levelStyles[level] || "bg-gray-600"}`;
+        toast.textContent = msg;
+
+        container.prepend(toast);
+
+        let fadeTimeout, removeTimeout;
+
+        function startTimer() {
+            fadeTimeout = setTimeout(() => {
+                toast.classList.add("opacity-0");
+                removeTimeout = setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        function clearTimers() {
+            clearTimeout(fadeTimeout);
+            clearTimeout(removeTimeout);
+        }
+
+        toast.addEventListener("mouseenter", clearTimers);
+        toast.addEventListener("mouseleave", startTimer);
+
+        startTimer();
+    }
+
+    const sse = new EventSource("/events");
+
+    sse.onmessage = (event) => {
+        try {
+            const parsed = JSON.parse(event.data);
+            if (parsed.level && parsed.msg) {
+                showToast(parsed);
+            }
+        } catch (e) {
+            console.error("Invalid SSE JSON:", event.data);
+        }
+    };
+</script>

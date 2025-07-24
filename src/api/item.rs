@@ -6,6 +6,7 @@ use crate::config::Config;
 use crate::db::job::{add_job, update_job, JobState};
 use crate::db::tag::{update_item_note, update_tag_item, TagCount};
 use crate::db::DBPool;
+use crate::ui::Broadcaster;
 use crate::{api, db, ConfigData, BASE_PATH_PREFIX};
 use actix_web::web::Data;
 use actix_web::{get, post, rt, web, Responder};
@@ -233,6 +234,7 @@ async fn civitai_download(
     db_pool: Data<DBPool>,
     config_data: Data<ConfigData>,
     params: Query<CivitaiDownloadQuery>,
+    broadcaster: Data<Broadcaster>,
 ) -> impl Responder {
     let mut config = config_data.config.write().await.clone();
     let dest_dir = PathBuf::from(&params.dest);
@@ -279,7 +281,8 @@ async fn civitai_download(
             &db_pool.sqlite_pool,
             format!("Download {}", params.url.as_str()).as_str(),
             "",
-        ).await;
+        )
+        .await;
         let blake3_lowercase = params.blake3.to_lowercase();
         info!("Downloading file {}: {}", params.name, params.url);
 
@@ -294,15 +297,18 @@ async fn civitai_download(
         )
         .await
         {
-            error!("Failed to download {}: {}", params.url.as_str(), e);
+            let msg = format!("Failed to download {}: {}", params.url.as_str(), e);
             if let Ok(id) = id {
                 let _ = update_job(&db_pool.sqlite_pool, id, format!("{e}").as_str(), JobState::Failed).await;
             }
+            broadcaster.error(&msg).await;
+            error!(msg);
             return;
         }
         if let Ok(id) = id {
             let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
         }
+        broadcaster.info(&format!("Download {} finished", params.name)).await;
 
         if let Err(e) = get_item_info(&path, &client, &headers, Some(blake3_lowercase), &config).await {
             error!("Failed to get model info: {}", e);

@@ -188,16 +188,29 @@ pub async fn download_file(
     let mut retried = 0;
     let mut file = File::create(path)?;
     let mut range_headers = headers.clone();
+    let mut err_msg = String::new();
     loop {
-        if let Ok(response) = client.get(url).headers(range_headers.clone()).send().await {
-            let mut stream = response.bytes_stream();
-            while let Some(chunk_result) = stream.next().await {
-                if let Ok(chunk) = chunk_result {
-                    if file.write_all(&chunk).is_ok() {
-                        hasher.update(&chunk);
-                        downloaded_bytes += chunk.len();
+        match client.get(url).headers(range_headers.clone()).send().await {
+            Ok(response) => {
+                if !response.status().is_success() {
+                    err_msg = response.text().await.unwrap_or_default();
+                    error!("Request failed: {}", &err_msg);
+                } else {
+                    let mut stream = response.bytes_stream();
+                    while let Some(chunk_result) = stream.next().await {
+                        if let Ok(chunk) = chunk_result {
+                            if file.write_all(&chunk).is_ok() {
+                                hasher.update(&chunk);
+                                downloaded_bytes += chunk.len();
+                            }
+                        }
                     }
                 }
+            }
+            Err(e) => {
+                err_msg = format!("{e}");
+                error!("{}", err_msg.as_str());
+                break;
             }
         }
         let file_hash = hasher.finalize();
@@ -205,7 +218,7 @@ pub async fn download_file(
             break;
         }
         if retried > max_retry {
-            return Err(anyhow::anyhow!("Maximum retried download"));
+            return Err(anyhow::anyhow!(err_msg));
         }
 
         retried += 1;

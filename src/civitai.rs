@@ -170,14 +170,16 @@ pub async fn download_file(
                     trash_path = PathBuf::from(base_path).join(TRASH_DIR);
                 }
             }
-            let mut new_name = PathBuf::from(path);
-            new_name.set_extension(format!(
-                "{}.bakup.{}",
-                path.extension().unwrap_or_default().to_str().unwrap_or_default(),
-                timestamp
-            ));
-            trash_path = trash_path.join(new_name.file_name().unwrap_or_default());
-            fs::rename(path, trash_path).await?;
+            if fs::create_dir_all(&trash_path).await.is_ok() {
+                let mut new_name = PathBuf::from(path);
+                new_name.set_extension(format!(
+                    "{}.bakup.{}",
+                    path.extension().unwrap_or_default().to_str().unwrap_or_default(),
+                    timestamp
+                ));
+                trash_path = trash_path.join(new_name.file_name().unwrap_or_default());
+                fs::rename(path, trash_path).await?;
+            }
         }
     }
 

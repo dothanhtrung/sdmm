@@ -35,14 +35,15 @@
     const container = document.getElementById("notify-container");
 
     const levelStyles = {
-        Info: "bg-blue-500",
-        Warn: "bg-yellow-500",
-        Error: "bg-red-500"
+        Info: "bg-green-600",
+        Warn: "bg-yellow-600",
+        Error: "bg-red-600"
     };
 
     function showToast({level, msg}) {
-        const baseClasses = "text-white text-sm px-4 py-2 rounded shadow-md transition-opacity duration-500";
+        const baseClasses = "text-white text-md px-4 py-2 rounded shadow-md transition-opacity duration-500";
         const toast = document.createElement("div");
+        const timeout = 6000;
 
         toast.className = `${baseClasses} ${levelStyles[level] || "bg-gray-600"}`;
         toast.textContent = msg;
@@ -52,10 +53,11 @@
         let fadeTimeout, removeTimeout;
 
         function startTimer() {
+            if (!document.hasFocus()) return;
             fadeTimeout = setTimeout(() => {
                 toast.classList.add("opacity-0");
                 removeTimeout = setTimeout(() => toast.remove(), 500);
-            }, 5000);
+            }, timeout);
         }
 
         function clearTimers() {

@@ -60,8 +60,6 @@
             await fetch(endpoint);
         } catch (err) {
             console.error(`Failed to call ${endpoint}`, err);
-        } finally {
-            alert("Task is running in the background.");
         }
     }
 

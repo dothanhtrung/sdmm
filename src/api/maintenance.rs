@@ -4,7 +4,7 @@ use crate::api::TRASH_DIR;
 use crate::civitai::update_model_info;
 use crate::db::job::{add_job, update_job, JobState};
 use crate::db::DBPool;
-use crate::ui::{Broadcaster};
+use crate::ui::Broadcaster;
 use crate::{api, db, ConfigData, StopHandle};
 use actix_web::web::Data;
 use actix_web::{get, rt, web, HttpResponse, Responder};
@@ -35,6 +35,7 @@ async fn scan_folder(
     broadcaster: Data<Broadcaster>,
 ) -> impl Responder {
     rt::spawn(async move {
+        broadcaster.warn("Start scanning folder...").await;
         scan(config, db_pool, &broadcaster).await;
     });
     web::Json("")
@@ -59,6 +60,7 @@ async fn sync_civitai(
     broadcaster: Data<Broadcaster>,
 ) -> impl Responder {
     rt::spawn(async move {
+        broadcaster.warn("Start to sync Civitai...").await;
         let id = add_job(&db_pool.sqlite_pool, "Sync Civitai", "").await;
         let config = config_data.config.read().await.clone();
         let _ = update_model_info(&config).await;
@@ -84,7 +86,8 @@ async fn empty_trash(config: Data<ConfigData>) -> impl Responder {
 }
 
 #[get("restart")]
-async fn restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder {
+async fn restart(stop_handle: Data<RwLock<StopHandle>>, broadcaster: Data<Broadcaster>) -> impl Responder {
+    broadcaster.warn("Restarting server...").await;
     let mut stop_handle = stop_handle.write().await;
     stop_handle.is_restarted = true;
     stop_handle.stop(true);
@@ -92,7 +95,8 @@ async fn restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder {
 }
 
 #[get("force_restart")]
-async fn force_restart(stop_handle: Data<RwLock<StopHandle>>) -> impl Responder {
+async fn force_restart(stop_handle: Data<RwLock<StopHandle>>, broadcaster: Data<Broadcaster>) -> impl Responder {
+    broadcaster.warn("Force restarting server...").await;
     let mut stop_handle = stop_handle.write().await;
     stop_handle.is_restarted = true;
     stop_handle.stop(false);

@@ -129,7 +129,6 @@ impl Broadcaster {
         self.broadcast(msg).await;
     }
 
-    #[allow(dead_code)]
     pub async fn warn(&self, msg: &str) {
         let msg = EventMsg {
             level: EventMsgLevel::Warn,

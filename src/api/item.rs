@@ -284,6 +284,9 @@ async fn civitai_download(
         )
         .await;
         let blake3_lowercase = params.blake3.to_lowercase();
+        broadcaster
+            .warn(&format!("Downloading file {}: {}", params.name, params.url))
+            .await;
         info!("Downloading file {}: {}", params.name, params.url);
 
         if let Err(e) = download_file(

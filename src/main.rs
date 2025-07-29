@@ -4,8 +4,6 @@
 //! TODO:
 //! * Replace preview image.
 //! * Create folder and move model
-//! * Browsing and download model from Civitai
-//!   * Support more filters
 //! * Duplicate check
 
 #[cfg(target_os = "linux")]
@@ -72,17 +70,7 @@ async fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
     // Load config file
-    let config_path = Path::new(&args.config);
-    let config = if config_path.exists() {
-        match Config::load(&args.config) {
-            Ok(c) => c,
-            Err(e) => return Err(anyhow!("Failed to load config file {}: {}", &args.config.display(), e)),
-        }
-    } else {
-        let default_config = Config::default();
-        default_config.save(config_path, false)?;
-        default_config
-    };
+    let mut config = load_config(&args.config)?;
 
     if args.update_model_info {
         update_model_info(&config).await?;
@@ -142,6 +130,9 @@ async fn main() -> anyhow::Result<()> {
         }
 
         stop_handle.write().await.is_restarted = false;
+
+        // Reload config
+        config = load_config(&args.config)?;
     }
     Ok(())
 }
@@ -162,5 +153,18 @@ impl StopHandle {
     pub(crate) fn stop(&self, graceful: bool) {
         #[allow(clippy::let_underscore_future)]
         let _ = self.inner.lock().as_ref().unwrap().stop(graceful);
+    }
+}
+
+fn load_config(config_path: &Path) -> anyhow::Result<Config> {
+    if config_path.exists() {
+        match Config::load(config_path) {
+            Ok(c) => Ok(c),
+            Err(e) => Err(anyhow!("Failed to load config file {}: {}", config_path.display(), e)),
+        }
+    } else {
+        let default_config = Config::default();
+        default_config.save(config_path, false)?;
+        Ok(default_config)
     }
 }

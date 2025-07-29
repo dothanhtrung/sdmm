@@ -42,7 +42,8 @@ async fn scan_folder(
 }
 
 #[get("remove_orphan")]
-async fn remove_orphan(db_pool: Data<DBPool>) -> impl Responder {
+async fn remove_orphan(db_pool: Data<DBPool>, broadcaster: Data<Broadcaster>) -> impl Responder {
+    broadcaster.warn("Removing orphan...").await;
     let deleted_items = db::item::clean(&db_pool.sqlite_pool).await.unwrap_or_default();
 
     web::Json(format!(
@@ -74,7 +75,8 @@ async fn sync_civitai(
 }
 
 #[get("empty_trash")]
-async fn empty_trash(config: Data<ConfigData>) -> impl Responder {
+async fn empty_trash(config: Data<ConfigData>, broadcaster: Data<Broadcaster>) -> impl Responder {
+    broadcaster.warn("Emptying trash...").await;
     let config = config.config.read().await;
     for (_, base_path) in config.model_paths.iter() {
         let trash_dir = PathBuf::from(base_path).join(TRASH_DIR);
@@ -87,7 +89,7 @@ async fn empty_trash(config: Data<ConfigData>) -> impl Responder {
 
 #[get("restart")]
 async fn restart(stop_handle: Data<RwLock<StopHandle>>, broadcaster: Data<Broadcaster>) -> impl Responder {
-    broadcaster.warn("Restarting server...").await;
+    broadcaster.warn("Restarting server. Please wait a minute...").await;
     let mut stop_handle = stop_handle.write().await;
     stop_handle.is_restarted = true;
     stop_handle.stop(true);

@@ -68,7 +68,7 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                         info!("Update model info: {}", entry.path().display());
                         if let Ok(_permit) = semaphore.acquire().await {
                             if let Err(e) = get_item_info(&path, &client, &headers, None, &config).await {
-                                error!("Failed to get model info: {}", e);
+                                error!("Failed to get model info {}: {}", &path.display(), e);
                             }
                         }
                     });
@@ -76,7 +76,6 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
                 }
             }
         }
-        info!("Finished sync Civitai");
     }
 
     for handle in handles {
@@ -84,6 +83,8 @@ pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {
             error!("Failed to sync Civitai: {}", e);
         }
     }
+
+    info!("Finished sync Civitai");
 
     Ok(())
 }

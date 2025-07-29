@@ -314,7 +314,7 @@ async fn civitai_download(
         broadcaster.info(&format!("Download {} finished", params.name)).await;
 
         if let Err(e) = get_item_info(&path, &client, &headers, Some(blake3_lowercase), &config).await {
-            error!("Failed to get model info: {}", e);
+            error!("Failed to get model info {}: {}", &path.display(), e);
             return;
         }
 

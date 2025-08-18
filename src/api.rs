@@ -5,7 +5,7 @@ mod item;
 mod maintenance;
 mod tag;
 
-use crate::civitai::{calculate_blake3, CivitaiFileMetadata};
+use crate::civitai::{calculate_blake3, CivitaiFileMetadata, PREVIEW_EXT};
 use crate::db::item::insert_or_update;
 use crate::db::tag::add_tag_from_model_info;
 use crate::db::DBPool;
@@ -16,6 +16,8 @@ use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 use tokio::fs;
 use tracing::error;
+use crate::BASE_PATH_PREFIX;
+use crate::config::Config;
 
 pub const TRASH_DIR: &str = ".trash";
 
@@ -48,6 +50,22 @@ struct DeleteRequest {
 struct CommonResponse {
     msg: String,
     err: Option<String>,
+}
+
+impl CommonResponse {
+    pub fn from_err(err: &str) -> Self {
+        Self {
+            err: Some(err.to_string()),
+            ..Self::default()
+        }
+    }
+
+    pub fn from_msg(msg: &str) -> Self {
+        Self {
+            msg: msg.to_string(),
+            ..Self::default()
+        }
+    }
 }
 
 fn get_relative_path(base_path: &str, path: &Path) -> Result<String, anyhow::Error> {
@@ -116,11 +134,38 @@ async fn save_model_info(db_pool: &DBPool, path: &Path, label: &str, relative_pa
     {
         Ok(id) => {
             let tags = vec![base_model.to_string()];
-            if let Err(e) = add_tag_from_model_info(&db_pool.sqlite_pool, id, &tags, &model_parsed, &file_metadata).await
+            if let Err(e) =
+                add_tag_from_model_info(&db_pool.sqlite_pool, id, &tags, &model_parsed, &file_metadata).await
             {
                 error!("Failed to insert tag: {}", e);
             }
         }
         Err(e) => error!("Failed to insert item: {}", e),
     }
+}
+
+/// Return abs path of (model, json) and http path of preview
+fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String, String, String) {
+    let (mut model, mut json, mut model_json, mut preview) =
+        (String::new(), String::new(), String::new(), String::new());
+    if let Some(base_path) = config.model_paths.get(label) {
+        let base_path = PathBuf::from(base_path);
+        let model_path = base_path.join(rel_path);
+        model = model_path.to_str().unwrap_or_default().to_string();
+
+        let mut json_path = model_path.clone();
+        json_path.set_extension("json");
+        json = json_path.to_str().unwrap_or_default().to_string();
+
+        let mut model_json_path = model_path.clone();
+        model_json_path.set_extension("model.json");
+        model_json = model_json_path.to_str().unwrap_or_default().to_string();
+
+        let img_path = PathBuf::from(format!("/{}{}", BASE_PATH_PREFIX, label));
+        let mut preview_path = img_path.join(rel_path);
+        preview_path.set_extension(PREVIEW_EXT);
+        preview = preview_path.to_str().unwrap_or_default().to_string();
+    }
+
+    (model, json, model_json, preview)
 }

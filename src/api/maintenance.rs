@@ -1,16 +1,19 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
-use crate::api::TRASH_DIR;
-use crate::civitai::update_model_info;
+use crate::api::{get_abs_path, CommonResponse, TRASH_DIR};
+use crate::civitai::{get_item_info, update_model_info};
 use crate::db::job::{add_job, update_job, JobState};
 use crate::db::DBPool;
 use crate::ui::Broadcaster;
 use crate::{api, db, ConfigData, StopHandle};
-use actix_web::web::Data;
+use actix_web::web::{Data, Query};
 use actix_web::{get, rt, web, HttpResponse, Responder};
 use jwalk::{Parallelism, WalkDir};
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use reqwest::Client;
+use serde::Deserialize;
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::{RwLock, Semaphore};
@@ -26,6 +29,12 @@ pub fn scope(cfg: &mut web::ServiceConfig) {
             .service(force_restart)
             .service(empty_trash),
     );
+}
+
+#[derive(Deserialize)]
+struct SyncCivitaiQuery {
+    /// Item id
+    id: Option<i64>,
 }
 
 #[get("scan")]
@@ -59,19 +68,41 @@ async fn sync_civitai(
     config_data: Data<ConfigData>,
     db_pool: Data<DBPool>,
     broadcaster: Data<Broadcaster>,
+    params: Query<SyncCivitaiQuery>,
 ) -> impl Responder {
-    rt::spawn(async move {
-        broadcaster.warn("Start to sync Civitai...").await;
-        let id = add_job(&db_pool.sqlite_pool, "Sync Civitai", "").await;
-        let config = config_data.config.read().await.clone();
-        let _ = update_model_info(&config).await;
-        if let Ok(id) = id {
-            let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
+    if let Some(id) = params.id {
+        match db::item::get_by_id(&db_pool.sqlite_pool, id).await {
+            Ok(item) => {
+                let config = config_data.config.read().await;
+                let (path, _, _, _) = get_abs_path(&config, item.base_label.as_str(), item.path.as_str());
+                let client = Client::new();
+                let mut headers = HeaderMap::new();
+                headers.insert(
+                    AUTHORIZATION,
+                    HeaderValue::from_str(&format!("Bearer {}", config.civitai.api_key))
+                        .unwrap_or(HeaderValue::from(0)),
+                );
+                let path = Path::new(&path);
+                if let Err(e) = get_item_info(path, &client, &headers, None, &config).await {
+                    error!("Failed to get model info {}: {}", &path.display(), e);
+                }
+            }
+            Err(e) => return web::Json(CommonResponse::from_err(e.to_string().as_str())),
         }
-        broadcaster.info("Sync Civitai finished").await;
-        scan(config_data, db_pool, &broadcaster).await;
-    });
-    web::Json("")
+    } else {
+        rt::spawn(async move {
+            broadcaster.warn("Start to sync Civitai...").await;
+            let id = add_job(&db_pool.sqlite_pool, "Sync Civitai", "").await;
+            let config = config_data.config.read().await.clone();
+            let _ = update_model_info(&config).await;
+            if let Ok(id) = id {
+                let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
+            }
+            broadcaster.info("Sync Civitai finished").await;
+            scan(config_data, db_pool, &broadcaster).await;
+        });
+    }
+    web::Json(CommonResponse::from_msg(""))
 }
 
 #[get("empty_trash")]

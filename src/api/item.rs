@@ -1,13 +1,12 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
-use crate::api::{CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
+use crate::api::{get_abs_path, CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
 use crate::civitai::{download_file, file_type, get_extension_from_url, get_item_info, FileType, PREVIEW_EXT};
-use crate::config::Config;
 use crate::db::job::{add_job, update_job, JobState};
 use crate::db::tag::{update_item_note, update_tag_item, TagCount};
 use crate::db::DBPool;
 use crate::ui::Broadcaster;
-use crate::{api, db, ConfigData, BASE_PATH_PREFIX};
+use crate::{api, db, ConfigData};
 use actix_web::web::Data;
 use actix_web::{get, post, rt, web, Responder};
 use actix_web_lab::extract::Query;
@@ -419,28 +418,3 @@ fn guess_saved_location(base_path: &str, model_type: &str) -> String {
     path.to_str().unwrap_or_default().to_string()
 }
 
-/// Return abs path of (model, json) and http path of preview
-fn get_abs_path(config: &Config, label: &str, rel_path: &str) -> (String, String, String, String) {
-    let (mut model, mut json, mut model_json, mut preview) =
-        (String::new(), String::new(), String::new(), String::new());
-    if let Some(base_path) = config.model_paths.get(label) {
-        let base_path = PathBuf::from(base_path);
-        let model_path = base_path.join(rel_path);
-        model = model_path.to_str().unwrap_or_default().to_string();
-
-        let mut json_path = model_path.clone();
-        json_path.set_extension("json");
-        json = json_path.to_str().unwrap_or_default().to_string();
-
-        let mut model_json_path = model_path.clone();
-        model_json_path.set_extension("model.json");
-        model_json = model_json_path.to_str().unwrap_or_default().to_string();
-
-        let img_path = PathBuf::from(format!("/{}{}", BASE_PATH_PREFIX, label));
-        let mut preview_path = img_path.join(rel_path);
-        preview_path.set_extension(PREVIEW_EXT);
-        preview = preview_path.to_str().unwrap_or_default().to_string();
-    }
-
-    (model, json, model_json, preview)
-}

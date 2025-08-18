@@ -4,7 +4,7 @@
             type="text"
             name="search"
             placeholder="Search..."
-            value="{{search}}"
+            value=""
             class="flex-grow bg-gray-800 border border-gray-700 text-white placeholder-gray-400 px-4 py-2 rounded-l-md focus:outline-none focus:ring-1 focus:ring-purple-500"
     />
     <button
@@ -20,3 +20,12 @@
     </button>
   </form>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const searchValue = params.get("search") || "";
+    const input = document.querySelector('input[name="search"]');
+    if (input) input.value = searchValue;
+  });
+</script>

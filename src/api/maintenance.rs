@@ -84,7 +84,12 @@ async fn sync_civitai(
                 );
                 let path = Path::new(&path);
                 if let Err(e) = get_item_info(path, &client, &headers, None, &config).await {
-                    error!("Failed to get model info {}: {}", &path.display(), e);
+                    broadcaster
+                        .error(&format!("Failed to get model info {}: {}", &path.display(), e))
+                        .await;
+                } else {
+                    api::save_model_info(&db_pool, &path, item.base_label.as_str(), item.path.as_str()).await;
+                    broadcaster.info(&format!("Synced model {}", &path.display())).await;
                 }
             }
             Err(e) => return web::Json(CommonResponse::from_err(e.to_string().as_str())),
@@ -148,7 +153,6 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>, broadcaster: &Bro
             let _ = update_job(&db_pool.sqlite_pool, id, msg.as_str(), JobState::Failed).await;
         }
         broadcaster.error(format!("Scan failed. {}", &msg).as_str()).await;
-        error!(msg);
         return;
     }
     let mut handles = Vec::new();

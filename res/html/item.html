@@ -1,15 +1,20 @@
 {% include "partial/header.html" %}
+{% include "partial/search.html" %}
+{% include "partial/sync_reload.html" %}
 
 <main class="flex-grow">
-    {% include "partial/sync_reload.html" %}
-
-
     <div class="px-4 flex justify-start gap-4 ">
         <button
                 onclick="handleDelete({{id}})"
                 class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
         >
             Delete
+        </button>
+        <button
+                onclick="handleSync({{id}})"
+                class="bg-blue-900 hover:bg-blue-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
+        >
+            Update info from Civitai
         </button>
     </div>
 
@@ -157,57 +162,58 @@
 
 <script>
     async function refreshContent() {
-        document.addEventListener("DOMContentLoaded", async () => {
-            const res = await fetch("/api/item?id={{id}}");
-            const json = await res.json();
+        const res = await fetch("/api/item?id={{id}}");
+        const json = await res.json();
 
-            const item = json.items?.[0];
-            const tags = json.tags;
-            if (!item) return;
+        const item = json.items?.[0];
+        const tags = json.tags;
+        if (!item) return;
 
-            const info = await JSON.parse(item.info || {});
+        const info = await JSON.parse(item.info || "{}");
 
-            document.getElementById("item-name").textContent = item.name || "";
-            document.getElementById("item-model").textContent = info.model?.name || "";
-            document.getElementById("item-path").textContent = item.path || "";
-            document.getElementById("item-trained-words").textContent = (info.trainedWords || []).join(" ");
-            document.getElementById("item-description").innerHTML = item.description || "";
+        document.getElementById("item-name").textContent = item.name || "";
+        document.getElementById("item-model").textContent = info.model?.name || "";
+        document.getElementById("item-path").textContent = item.path || "";
+        document.getElementById("item-trained-words").textContent = (info.trainedWords || []).join(" ");
+        document.getElementById("item-description").innerHTML = item.description || "";
 
-            const modelId = info.modelId || "";
-            if (modelId !== "") {
-                const civitai_element = document.getElementById("item-civitai");
-                civitai_element.href = `https://civitai.com/models/${modelId}`;
-                document.getElementById("item-civitai").textContent = `https://civitai.com/models/${modelId}`;
-            }
+        const modelId = info.modelId || "";
+        if (modelId !== "") {
+            const civitai_element = document.getElementById("item-civitai");
+            civitai_element.href = `https://civitai.com/models/${modelId}`;
+            document.getElementById("item-civitai").textContent = `https://civitai.com/models/${modelId}`;
+        }
 
-            document.getElementById("item-note-edit").value = item.note || "";
+        document.getElementById("item-note-edit").value = item.note || "";
 
-            const img_preview = document.getElementById("item-preview");
-            const vid_preview = document.getElementById("item-video");
-            img_preview.src = item.preview || "";
-            vid_preview.src = item.video_preview || "";
-            if (item.video_preview) {
-                vid_preview.classList.remove("hidden");
-                img_preview.classList.add("hidden");
-            } else {
-                img_preview.classList.remove("hidden");
-                vid_preview.classList.add("hidden");
-            }
+        const img_preview = document.getElementById("item-preview");
+        const vid_preview = document.getElementById("item-video");
+        img_preview.src = item.preview || "";
+        vid_preview.src = item.video_preview || "";
+        if (item.video_preview) {
+            vid_preview.classList.remove("hidden");
+            img_preview.classList.add("hidden");
+        } else {
+            img_preview.classList.remove("hidden");
+            vid_preview.classList.add("hidden");
+        }
 
-            displayImageMeta(info);
+        displayImageMeta(info);
 
-            display_tag(tags);
-            const tagEditBox = document.getElementById("item-tags-edit");
-            (tags || []).forEach(tag => {
-                tagEditBox.append(tag.tag + " ");
-            });
-
-
-            document.getElementById("item-info").textContent = formatJson(item.info);
-
+        display_tag(tags);
+        const tagEditBox = document.getElementById("item-tags-edit");
+        (tags || []).forEach(tag => {
+            tagEditBox.append(tag.tag + " ");
         });
 
+
+        document.getElementById("item-info").textContent = formatJson(item.info);
+
+
         function displayImageMeta(info) {
+            if (!info || !info.images || info.images.length === 0) {
+                return 0;
+            }
             const imageMeta = info.images[0].meta;
             if (!imageMeta) return;
 
@@ -250,7 +256,14 @@
         }
     }
 
-    refreshContent();
+    async function handleSync(id) {
+        await fetch(`/api/maintenance/sync_civitai?id=${id}`);
+        await refreshContent();
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        await refreshContent();
+    });
 </script>
 
 <script>

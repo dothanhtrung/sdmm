@@ -19,6 +19,7 @@ use std::time::Duration;
 use tera::Tera;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
+use tracing::{error, info, warn};
 
 pub fn scope_config(cfg: &mut web::ServiceConfig) {
     let tera = Tera::new("res/html/**/*").unwrap();
@@ -122,6 +123,7 @@ impl Broadcaster {
     }
 
     pub async fn info(&self, msg: &str) {
+        info!(msg);
         let msg = EventMsg {
             level: EventMsgLevel::Info,
             msg: msg.to_string(),
@@ -130,6 +132,7 @@ impl Broadcaster {
     }
 
     pub async fn warn(&self, msg: &str) {
+        warn!(msg);
         let msg = EventMsg {
             level: EventMsgLevel::Warn,
             msg: msg.to_string(),
@@ -138,6 +141,7 @@ impl Broadcaster {
     }
 
     pub async fn error(&self, msg: &str) {
+        error!(msg);
         let msg = EventMsg {
             level: EventMsgLevel::Error,
             msg: msg.to_string(),

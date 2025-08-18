@@ -1,24 +1,24 @@
 //! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
 
-use crate::api::{get_abs_path, CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
-use crate::civitai::{download_file, file_type, get_extension_from_url, get_item_info, FileType, PREVIEW_EXT};
-use crate::db::job::{add_job, update_job, JobState};
-use crate::db::tag::{update_item_note, update_tag_item, TagCount};
+use crate::api::{CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR, get_abs_path};
+use crate::civitai::{FileType, PREVIEW_EXT, download_file, file_type, get_extension_from_url, get_item_info};
 use crate::db::DBPool;
+use crate::db::job::{JobState, add_job, update_job};
+use crate::db::tag::{TagCount, update_item_note, update_tag_item};
 use crate::ui::Broadcaster;
-use crate::{api, db, ConfigData};
+use crate::{ConfigData, api, db};
 use actix_web::web::Data;
-use actix_web::{get, post, rt, web, Responder};
+use actix_web::{Responder, get, post, rt, web};
 use actix_web_lab::extract::Query;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use tokio::fs;
-use tracing::{error, info};
+use tracing::error;
 
 pub fn scope(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -284,9 +284,8 @@ async fn civitai_download(
         .await;
         let blake3_lowercase = params.blake3.to_lowercase();
         broadcaster
-            .warn(&format!("Downloading file {}: {}", params.name, params.url))
+            .info(&format!("Downloading file {}: {}", params.name, params.url))
             .await;
-        info!("Downloading file {}: {}", params.name, params.url);
 
         if let Err(e) = download_file(
             params.url.as_str(),
@@ -304,7 +303,6 @@ async fn civitai_download(
                 let _ = update_job(&db_pool.sqlite_pool, id, format!("{e}").as_str(), JobState::Failed).await;
             }
             broadcaster.error(&msg).await;
-            error!(msg);
             return;
         }
         if let Ok(id) = id {
@@ -417,4 +415,3 @@ fn guess_saved_location(base_path: &str, model_type: &str) -> String {
 
     path.to_str().unwrap_or_default().to_string()
 }
-

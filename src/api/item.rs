@@ -308,7 +308,7 @@ async fn civitai_download(
         if let Ok(id) = id {
             let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
         }
-        broadcaster.info(&format!("Download {} finished", params.name)).await;
+        broadcaster.info(&format!("Finished downloading {}", params.name)).await;
 
         if let Err(e) = get_item_info(&path, &client, &headers, Some(blake3_lowercase), &config).await {
             error!("Failed to get model info {}: {}", &path.display(), e);

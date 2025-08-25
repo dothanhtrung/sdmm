@@ -103,7 +103,7 @@ async fn sync_civitai(
             if let Ok(id) = id {
                 let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
             }
-            broadcaster.info("Sync Civitai finished").await;
+            broadcaster.info("Finish syncing model info from Civitai").await;
             scan(config_data, db_pool, &broadcaster).await;
         });
     }
@@ -200,5 +200,5 @@ async fn scan(config: Data<ConfigData>, db_pool: Data<DBPool>, broadcaster: &Bro
     if let Ok(id) = id {
         let _ = update_job(&db_pool.sqlite_pool, id, "", JobState::Succeed).await;
     }
-    broadcaster.info("Scan finished").await;
+    broadcaster.info("Finished scanning").await;
 }

@@ -13,7 +13,7 @@ Stable Diffusion Models Manager
 
 </div>
 
-Standalone application to manage your local Stable Diffusion models. This app is web-based so you can run on
+Standalone application to manage your local Stable Diffusion models. This app is web-based so you can run it on
 your cloud machine like runpod.
 
 Features:
@@ -49,12 +49,15 @@ npx @tailwindcss/cli -i ./css/tailwind_input.css -o ./css/tailwind_output.min.cs
 
 Migrate database:
 ```shell
+# Create sqlite db file if not exist (only used for building)
+touch sdmm.sqlite
+
 sqlx migrate run
 ```
 
 Build the application
 
-* Normal build:
+* Normal build (for running on the same machine):
     ```shell
     cargo build --release
     ```
@@ -62,11 +65,16 @@ Build the application
 
 * Statically build for Linux so you can copy binary to another machine and run without worrying about dependencies:
     ```shell
-    rustup target add x86_64-unknown-linux-musl
+    rustup target add x86_64-unknown-linux-musl    # run once if not installed
     cargo build --target=x86_64-unknown-linux-musl --release
     ```
     Output: `target/x86_64-unknown-linux-musl/release/sdmm`
 
+* Cross build in Linux for Windows target:
+    ```shell
+    rustup target add x86_64-pc-windows-gnu    # run once if not installed
+    cargo build --target=x86_64-pc-windows-gnu --release
+    ```
 
 ------
 

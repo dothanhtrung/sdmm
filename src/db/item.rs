@@ -129,7 +129,7 @@ pub async fn search(
         count += count_by_name;
     }
 
-    let tags: Vec<String> = search.split_whitespace().map(|s| s.to_string()).collect();
+    let tags: Vec<String> = search.split_whitespace().map(|s| s.to_string().to_lowercase()).collect();
 
     if !tags.is_empty() {
         let condition = format!(

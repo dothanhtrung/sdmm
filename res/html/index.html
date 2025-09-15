@@ -117,6 +117,9 @@
                     info = {};
                 }
                 const modelType = info?.model?.type || "";
+                const modelTypeTag = modelType.toLowerCase().replace(/\s+/g, "_");
+                const baseModel = info?.baseModel || "";
+                const baseModelTag = baseModel.toLowerCase().replace(/\s+/g, "_");
                 let preview_tag = `<img src="/assets/no_image.png" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">`;
                 if (item.preview !== "") {
                      preview_tag = `<img src="${item.preview}" alt="${item.name}" class="w-full aspect-w-1 aspect-h-1 object-cover bg-gray-100">`;
@@ -131,11 +134,17 @@
                     <div class="relative">
                         <a href="/item/${item.id}">
                             ${preview_tag}
-                            <div class="absolute top-0 left-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">${modelType}</div>
                         </a>
+
+                        <div class="absolute top-0 left-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">
+                            <a href="?search=${modelTypeTag}&tag_only=true">${modelType}</a>
+                        </div>
+                        <div class="absolute top-0 right-0 m-2 px-2 py-1 bg-purple-700 text-white text-xs font-semibold rounded">
+                            <a href="?search=${baseModelTag}&tag_only=true">${baseModel}</a>
+                        </div>
                         <button
                             onclick="handleDelete(${item.id}); event.stopPropagation();"
-                            class="absolute top-0 right-0 m-2 z-10 text-sm bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded">
+                            class="absolute bottom-0 right-0 m-2 z-10 text-sm bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded">
                             🗑️
                         </button>
                     </div>

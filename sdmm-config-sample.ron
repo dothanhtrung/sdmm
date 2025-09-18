@@ -18,6 +18,8 @@
     listen_port: 9696,
     api: (
         per_page: 20,
+        basic_auth_user: "",
+        basic_auth_pass: "",
     ),
     parallel: 8,
     extensions: [

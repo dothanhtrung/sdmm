@@ -37,12 +37,16 @@ pub struct DBConfig {
 #[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct APIConfig {
     pub per_page: u32,
+    pub basic_auth_user: String,
+    pub basic_auth_pass: String,
 }
 
 impl Default for APIConfig {
     fn default() -> Self {
         Self {
             per_page: DEFAULT_API_PER_PAGE,
+            basic_auth_user: String::new(),
+            basic_auth_pass: String::new(),
         }
     }
 }
@@ -109,6 +113,7 @@ pub struct Config {
     pub listen_addr: String,
     #[serde(default)]
     pub listen_port: u32,
+    #[serde(default)]
     pub api: APIConfig,
     #[serde(default)]
     pub parallel: usize,

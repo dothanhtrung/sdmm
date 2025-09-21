@@ -83,6 +83,7 @@ async fn sync_civitai(
                         .unwrap_or(HeaderValue::from(0)),
                 );
                 let path = Path::new(&path);
+                broadcaster.info("Start to sync Civitai...").await;
                 if let Err(e) = get_item_info(path, &client, &headers, None, &config).await {
                     broadcaster
                         .error(&format!("Failed to get model info {}: {}", &path.display(), e))
@@ -96,7 +97,7 @@ async fn sync_civitai(
         }
     } else {
         rt::spawn(async move {
-            broadcaster.warn("Start to sync Civitai...").await;
+            broadcaster.info("Start to sync Civitai...").await;
             let id = add_job(&db_pool.sqlite_pool, "Sync Civitai", "").await;
             let config = config_data.config.read().await.clone();
             let _ = update_model_info(&config).await;
@@ -120,7 +121,8 @@ async fn empty_trash(config: Data<ConfigData>, broadcaster: Data<Broadcaster>) -
             error!("Failed to remove trash directory: {}", e);
         }
     }
-    web::Json("")
+    broadcaster.info("Finish emptying trash...").await;
+    web::Json(CommonResponse::default())
 }
 
 #[get("restart")]

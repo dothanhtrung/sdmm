@@ -37,7 +37,9 @@ pub struct DBConfig {
 #[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct APIConfig {
     pub per_page: u32,
+    #[serde(default)]
     pub basic_auth_user: String,
+    #[serde(default)]
     pub basic_auth_pass: String,
 }
 

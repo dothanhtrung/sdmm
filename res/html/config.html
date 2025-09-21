@@ -85,6 +85,16 @@
                 <input type="number" name="api.per_page"
                        class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
             </div>
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Basic auth username</label>
+                <input type="text" name="api.basic_auth_user"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
+            <div class="py-4">
+                <label class="block font-semibold mb-2">Basic auth password</label>
+                <input type="password" name="api.basic_auth_pass"
+                       class="w-full bg-gray-800 border border-gray-600 px-3 py-2 rounded"/>
+            </div>
         </div>
 
 
@@ -106,6 +116,8 @@
         document.querySelector('[name="listen_addr"]').value = config.listen_addr || "";
         document.querySelector('[name="listen_port"]').value = config.listen_port || 0;
         document.querySelector('[name="api.per_page"]').value = config.api.per_page || 0;
+        document.querySelector('[name="api.basic_auth_user"]').value = config.api.basic_auth_user || "";
+        document.querySelector('[name="api.basic_auth_pass"]').value = config.api.basic_auth_pass || "";
         document.querySelector('[name="parallel"]').value = config.parallel || 0;
         document.querySelector('[name="civitai.max_retries"]').value = config.civitai.max_retries || 0;
         document.getElementById("overwrite_thumbnail").checked = config.civitai.overwrite_thumbnail || false;
@@ -213,6 +225,8 @@
         config.listen_addr = form["listen_addr"].value;
         config.listen_port = parseInt(form["listen_port"].value);
         config.api.per_page = parseInt(form["api.per_page"].value);
+        config.api.basic_auth_user = form["api.basic_auth_user"].value;
+        config.api.basic_auth_pass = form["api.basic_auth_pass"].value;
         config.parallel = parseInt(form["parallel"].value);
 
         config.extensions = [];

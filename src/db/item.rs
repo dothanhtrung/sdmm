@@ -112,13 +112,21 @@ pub async fn search(
     if !tag_only {
         let items_by_name = sqlx::query_as!(
         Item,
-        r#"SELECT id,name, path, base_label, note FROM item WHERE is_checked = true AND name COLLATE NOCASE LIKE '%' || ? || '%' OR model_name LIKE '%' || ? || '%' ORDER BY updated_at DESC LIMIT ? OFFSET ?"#,
+        r#"SELECT id,name, path, base_label, note FROM item
+           WHERE is_checked = true
+                 AND (name COLLATE NOCASE LIKE '%' || ? || '%'
+                      OR model_name COLLATE NOCASE LIKE '%' || ? || '%')
+           ORDER BY updated_at DESC
+           LIMIT ? OFFSET ?"#,
         search, search, limit, offset
     )
             .fetch_all(pool)
             .await?;
         let count_by_name = sqlx::query_scalar!(
-            "SELECT count(id) FROM item WHERE is_checked = true AND name LIKE '%' || ? || '%' OR model_name LIKE '%' || ? || '%'",
+            r#"SELECT count(id) FROM item
+               WHERE is_checked = true
+                 AND (name COLLATE NOCASE LIKE '%' || ? || '%'
+                      OR model_name COLLATE NOCASE LIKE '%' || ? || '%')"#,
             search,
             search
         )

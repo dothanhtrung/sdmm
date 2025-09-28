@@ -6,13 +6,13 @@
     <div class="px-4 flex justify-start gap-4 ">
         <button
                 onclick="handleDelete({{id}})"
-                class="bg-red-900 hover:bg-red-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
+                class="btn btn-danger font-bold"
         >
             Delete
         </button>
         <button
                 onclick="handleSync({{id}})"
-                class="bg-blue-900 hover:bg-blue-700 text-white focus:outline-none focus:shadow-outline font-bold py-2 px-4 rounded"
+                class="btn btn-primary font-bold"
         >
             Update info from Civitai
         </button>
@@ -45,12 +45,12 @@
 
                     <div>
                         <label for="item-tags-edit" class="text-purple-400">Tags:</label><br>
-                        <textarea id="item-tags-edit" class="border-b-gray-400 border w-full" rows="5"></textarea>
+                        <textarea id="item-tags-edit" class="textarea w-full" rows="5"></textarea>
                         <ul id="tag-hint-box"
                             class="absolute z-10 bg-gray-800 text-white border border-gray-700 rounded mt-1 hidden max-h-40 overflow-y-auto text-sm"></ul>
                         <br>
                         <label for="item-note-edit" class="text-purple-400">Note:</label>
-                        <textarea id="item-note-edit" class="border-b-gray-400 border w-full" rows="5"></textarea>
+                        <textarea id="item-note-edit" class="textarea w-full" rows="5"></textarea>
                         <button id="save-btn"
                                 class="mt-3 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 transition">
                             Save

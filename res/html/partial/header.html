@@ -3,17 +3,29 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script>
+        // Apply saved theme ASAP to avoid flash
+        (function(){
+            try {
+                var t = localStorage.getItem('theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <link href="/css/tailwind_output.min.css" rel="stylesheet">
+    <link href="/css/theme.css" rel="stylesheet">
     <title>SDMM</title>
 
     <style>
         select option:checked {
-            background-color: #7c3aed; /* Tailwind's purple-600 */
+            background-color: var(--accent);
             color: white;
         }
     </style>
 </head>
-<body class="bg-black text-white flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen">
 
 <div class="w-full flex items-center justify-between shadow-md px-4 py-3">
 
@@ -21,17 +33,39 @@
         <!--        <img src="/assets/icon.png" alt="" class="w-8 h-8"/>-->
         <a href="/"><span class="text-2xl font-bold">SDMM</span></a>
         <nav class="flex items-center space-x-4 ml-6">
-            <a href="/" class="hover:text-white transition font-bold">Home</a>
-            <a href="/civitai" class="hover:text-white transition font-bold">Civitai</a>
-            <a href="/maintenance" class="hover:text-white transition font-bold">Maintenance</a>
-            <a href="/setting" class="hover:text-white transition font-bold">Setting</a>
+            <a href="/" class="transition font-bold">Home</a>
+            <a href="/civitai" class="transition font-bold">Civitai</a>
+            <a href="/maintenance" class="transition font-bold">Maintenance</a>
+            <a href="/setting" class="transition font-bold">Setting</a>
         </nav>
     </div>
+
+<!--    <div class="flex items-center gap-2">-->
+<!--        <label for="themeSwitcher" class="text-sm">Theme</label>-->
+<!--        <select id="themeSwitcher" class="select input-rounded">-->
+<!--            <option value="dark">Dark</option>-->
+<!--            <option value="light">Light</option>-->
+<!--        </select>-->
+<!--    </div>-->
 </div>
 
 <div id="notify-container" class="fixed top-4 right-4 flex flex-col-reverse gap-2 z-50"></div>
 
 <script>
+    // Init theme switcher UI
+    (function(){
+        const sel = document.getElementById('themeSwitcher');
+        if (sel) {
+            const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            sel.value = cur;
+            sel.addEventListener('change', function(){
+                const val = sel.value;
+                document.documentElement.setAttribute('data-theme', val);
+                try { localStorage.setItem('theme', val); } catch (e) {}
+            });
+        }
+    })();
+
     const container = document.getElementById("notify-container");
 
     const levelStyles = {

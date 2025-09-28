@@ -11,11 +11,11 @@
                         type="text"
                         name="query"
                         placeholder="Search..."
-                        class="flex-grow bg-gray-800 border border-gray-700 text-white placeholder-gray-400 px-4 py-2 rounded-l-md focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        class="flex-grow input input-rounded-l"
                 />
                 <button
                         type="submit"
-                        class="bg-gray-800 border border-l-0 border-gray-700 px-4 rounded-r-md hover:bg-gray-700"
+                        class="btn btn-icon btn-icon-rounded-r border-l-0"
                 >
 
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24"
@@ -30,7 +30,7 @@
             <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
                 <!-- Type selector -->
                 <select name="types" multiple size="7"
-                        class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1">
+                        class="col-span-1 select input-rounded">
                     <option value="Checkpoint">Checkpoint</option>
                     <option value="LORA">LORA</option>
                     <option value="TextualInversion">TextualInversion</option>
@@ -50,7 +50,7 @@
                 </select>
 
                 <select name="baseModels" multiple size="7"
-                        class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1">
+                        class="col-span-1 select input-rounded">
                     <option value="Wan Video 14B i2v 720p">Wan Video 14B i2v 720p</option>
                     <option value="Wan Video 14B i2v 480p">Wan Video 14B i2v 480p</option>
                     <option value="Wan Video 14B t2v">Wan Video 14B t2v</option>
@@ -106,7 +106,7 @@
 
                 <!-- Sort selector -->
                 <select name="sort"
-                        class="col-span-1 bg-gray-800 text-white border border-gray-700 rounded-md px-2 py-1"
+                        class="col-span-1 select input-rounded"
                         value="{{config.search.sort}}">
                     <option value="Highest Rated">Highest Rated</option>
                     <option value="Most Downloaded">Most Downloaded</option>
@@ -304,7 +304,7 @@
         if (lastCursor.length > 0) {
             const topPrevBtn = document.createElement("button");
             topPrevBtn.textContent = "Prev";
-            topPrevBtn.className = "px-4 py-1 rounded text-sm border text-white border-gray-700 hover:bg-gray-700";
+            topPrevBtn.className = "btn btn-secondary btn-sm";
 
             let cursor = lastCursor[lastCursor.length - 1];
             const botPrevBtn = topPrevBtn.cloneNode(true);
@@ -324,7 +324,7 @@
         if (nextCursor) {
             const topNextBtn = document.createElement("button");
             topNextBtn.textContent = "Next";
-            topNextBtn.className = "px-4 py-1 rounded text-sm border text-white border-gray-700 hover:bg-gray-700";
+            topNextBtn.className = "btn btn-secondary btn-sm";
 
             const botNextBtn = topNextBtn.cloneNode(true);
 
@@ -350,7 +350,7 @@
         item.modelVersions?.forEach((version, index) => {
             const tab = document.createElement("button");
             tab.textContent = version.name || `Version ${index + 1}`;
-            tab.className = "text-sm px-3 py-1 rounded bg-gray-800 text-white border border-gray-700 hover:bg-gray-700";
+            tab.className = "btn btn-secondary btn-sm";
             tab.addEventListener("click", () => showVersionContent(version, item));
             tabs.appendChild(tab);
         });
@@ -397,7 +397,7 @@
             const btn = document.createElement("button");
             if (is_downloaded === false) {
                 btn.textContent = "⬇️ Download";
-                btn.className = "bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded";
+                btn.className = "btn btn-primary";
                 btn.addEventListener("click", async () => {
                     const path = encodeURIComponent(input.value);
                     // TODO: Does need to pass model_type
@@ -412,7 +412,7 @@
                 });
             } else {
                 btn.textContent = "Downloaded"
-                btn.className = "bg-gray-600 text-gray-300 px-3 py-2 rounded";
+                btn.className = "btn btn-disabled";
             }
 
             const baseModel = document.createElement("strong");

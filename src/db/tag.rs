@@ -54,6 +54,7 @@ pub async fn update_tag(pool: &SqlitePool, tag: &Tag) -> Result<(), sqlx::Error>
         .deps
         .clone()
         .unwrap_or_default()
+        .to_lowercase()
         .split_whitespace()
         .collect::<Vec<&str>>()
     {
@@ -89,6 +90,8 @@ pub async fn add_tag_item(pool: &SqlitePool, item: i64, tags: &Vec<String>) -> R
         if tag.is_empty() {
             continue;
         }
+
+        let tag = tag.to_lowercase().to_string();
 
         let tag_id = match sqlx::query_scalar!("SELECT id FROM tag WHERE name = ?", tag)
             .fetch_one(pool)

@@ -10,6 +10,7 @@ pub enum JobState {
     Failed,
 }
 
+#[allow(unused)]
 pub struct Job {
     pub id: i64,
     pub title: String,
@@ -48,6 +49,7 @@ pub async fn update_job(pool: &SqlitePool, id: i64, desc: &str, state: JobState)
     Ok(())
 }
 
+#[allow(unused)]
 pub async fn get(pool: &SqlitePool, limit: i64, offset: i64) -> Result<(Vec<Job>, i64), sqlx::Error> {
     let items = sqlx::query_as!(
         Job,
@@ -65,6 +67,7 @@ pub async fn get(pool: &SqlitePool, limit: i64, offset: i64) -> Result<(Vec<Job>
     Ok((items, total))
 }
 
+#[allow(unused)]
 pub async fn clean(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
     let count = sqlx::query!(r#"DELETE FROM job WHERE stopped_at IS NOT NULL"#)
         .execute(pool)

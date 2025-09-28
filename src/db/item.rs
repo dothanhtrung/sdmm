@@ -44,7 +44,8 @@ pub async fn insert_or_update(
     blake3: &str,
     updated_at_ms: i64,
 ) -> Result<i64, sqlx::Error> {
-    let ret_id = sqlx::query!(r#"
+    let ret_id = sqlx::query!(
+        r#"
         INSERT INTO item (name, path, base_label, blake3, updated_at) VALUES (?, ?, ?, ?, ?)
         ON CONFLICT (path, base_label) DO UPDATE SET
             is_checked=true,
@@ -53,11 +54,15 @@ pub async fn insert_or_update(
             name=excluded.name,
             updated_at = excluded.updated_at
         RETURNING id"#,
-            name,
-            path,
-            base_label,
-            blake3,
-            updated_at_ms,).fetch_one(pool).await?.id;
+        name,
+        path,
+        base_label,
+        blake3,
+        updated_at_ms,
+    )
+    .fetch_one(pool)
+    .await?
+    .id;
 
     Ok(ret_id)
 }
@@ -109,19 +114,23 @@ pub async fn search(
     //TODO: Search in note too
     let mut items = IndexSet::new();
     let mut count = 0;
+    let mut exclude_name = String::new();
     if !tag_only {
         let items_by_name = sqlx::query_as!(
-        Item,
-        r#"SELECT id,name, path, base_label, note FROM item
+            Item,
+            r#"SELECT id,name, path, base_label, note FROM item
            WHERE is_checked = true
                  AND (name COLLATE NOCASE LIKE '%' || ? || '%'
                       OR model_name COLLATE NOCASE LIKE '%' || ? || '%')
            ORDER BY updated_at DESC
            LIMIT ? OFFSET ?"#,
-        search, search, limit, offset
-    )
-            .fetch_all(pool)
-            .await?;
+            search,
+            search,
+            limit,
+            offset
+        )
+        .fetch_all(pool)
+        .await?;
         let count_by_name = sqlx::query_scalar!(
             r#"SELECT count(id) FROM item
                WHERE is_checked = true
@@ -130,14 +139,23 @@ pub async fn search(
             search,
             search
         )
-            .fetch_one(pool)
-            .await?;
+        .fetch_one(pool)
+        .await?;
+
+        exclude_name = format!(
+            "AND NOT (item.name COLLATE NOCASE LIKE '%{}%'
+                      OR item.model_name COLLATE NOCASE LIKE '%{}%')",
+            &search, &search
+        );
 
         items.extend(items_by_name);
         count += count_by_name;
     }
 
-    let tags: Vec<String> = search.split_whitespace().map(|s| s.to_string().to_lowercase()).collect();
+    let tags: Vec<String> = search
+        .split_whitespace()
+        .map(|s| s.to_string().to_lowercase())
+        .collect();
 
     if !tags.is_empty() {
         let condition = format!(
@@ -146,9 +164,11 @@ pub async fn search(
           LEFT JOIN tag ON tag.id = tag_item.tag
           WHERE item.is_checked = true
             AND tag.name IN ('{}')
+            {}
           GROUP BY item.id
           HAVING COUNT(DISTINCT tag.id) = {}",
             tags.join("','"),
+            &exclude_name,
             tags.len()
         );
         let query = format!(

@@ -4,6 +4,7 @@ mod config;
 mod item;
 mod maintenance;
 mod tag;
+mod job;
 
 use crate::civitai::{calculate_blake3, CivitaiFileMetadata, PREVIEW_EXT};
 use crate::db::item::insert_or_update;
@@ -27,6 +28,7 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
             .configure(maintenance::scope)
             .configure(item::scope)
             .configure(tag::scope)
+            .configure(job::scope)
             .configure(config::scope),
     );
 }

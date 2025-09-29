@@ -31,6 +31,7 @@ pub fn scope_config(cfg: &mut web::ServiceConfig) {
         .service(civitai)
         .service(tag)
         .service(setting)
+        .service(job)
         .service(event_stream)
         .service(Files::new("/assets", "res/assets"))
         .service(Files::new("/css", "res/css"))
@@ -219,6 +220,17 @@ async fn tag(tmpl: Data<Tera>) -> impl Responder {
 async fn setting(tmpl: Data<Tera>) -> impl Responder {
     let ctx = tera::Context::new();
     match tmpl.render("config.html", &ctx) {
+        Ok(template) => HttpResponse::Ok().content_type("text/html").body(template),
+        Err(e) => HttpResponse::Ok()
+            .content_type("text/html")
+            .body(format!("Template error: {e}")),
+    }
+}
+
+#[get("/job")]
+async fn job(tmpl: Data<Tera>) -> impl Responder {
+    let ctx = tera::Context::new();
+    match tmpl.render("job.html", &ctx) {
         Ok(template) => HttpResponse::Ok().content_type("text/html").body(template),
         Err(e) => HttpResponse::Ok()
             .content_type("text/html")

@@ -1,0 +1,89 @@
+{% include "partial/header.html" %}
+
+<div class="theme-container py-6">
+    <div class="flex justify-between items-center mb-4">
+        <button id="clear-btn" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
+            Clear Jobs
+        </button>
+    </div>
+
+    <div id="jobs-container" class="flex flex-col gap-4"></div>
+</div>
+
+<script>
+    async function fetchJobs() {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has("limit")) params.set("limit", 20);
+        if (!params.has("offset")) params.set("offset", 0);
+
+        try {
+            const res = await fetch(`/api/job?${params.toString()}`);
+            const data = await res.json();
+            if (data.err) {
+                console.error("API error:", data.err);
+                return;
+            }
+            renderJobs(data.jobs);
+        } catch (err) {
+            console.error("Request failed:", err);
+        }
+    }
+
+    function formatDate(epoch) {
+        if (!epoch) return "-";
+        const d = new Date(epoch * 1000);
+        return d.toLocaleString();
+    }
+
+    function jobState(state) {
+        switch (state) {
+            case 0: return { text: "Running", bg: "bg-[var(--warn)]" };
+            case 1: return { text: "Success", bg: "bg-[var(--success)]" };
+            case 2: return { text: "Failed", bg: "bg-[var(--danger)]" };
+            default: return { text: "Unknown", bg: "bg-[var(--muted-bg)]" };
+        }
+    }
+
+    function renderJobs(jobs) {
+        const container = document.getElementById("jobs-container");
+        container.innerHTML = "";
+
+        jobs.forEach(job => {
+            const { text: stateText, bg } = jobState(job.state);
+            const jobEl = document.createElement("div");
+            jobEl.className = `${bg} text-black rounded-lg p-4 shadow flex justify-between items-start`;
+
+            jobEl.innerHTML = `
+          <div class="flex flex-col">
+            <h2 class="text-lg font-semibold mb-1">${job.title}</h2>
+            <p class="text-sm">${job.desc}</p>
+          </div>
+          <div class="flex flex-col text-right">
+            <p><strong>Started:</strong> ${formatDate(job.started_at)}</p>
+            <p><strong>Stopped:</strong> ${formatDate(job.stopped_at)}</p>
+            <p class="font-bold">State: ${stateText}</p>
+          </div>
+        `;
+            container.appendChild(jobEl);
+        });
+    }
+
+    async function clearJobs() {
+        try {
+            const res = await fetch("/api/job/clear");
+            if (res.ok) {
+                location.reload();
+            } else {
+                alert("Failed to clear jobs");
+            }
+        } catch (err) {
+            console.error("Clear request failed:", err);
+            alert("Error clearing jobs");
+        }
+    }
+
+    document.getElementById("clear-btn").addEventListener("click", clearJobs);
+    window.addEventListener("DOMContentLoaded", fetchJobs);
+</script>
+
+{% include "partial/footer.html" %}

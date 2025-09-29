@@ -30,7 +30,7 @@ use actix_web::error::InternalError;
 use actix_web::http::header;
 use actix_web::middleware::Condition;
 use actix_web::web::Data;
-use actix_web::{App, Error, HttpResponse, HttpServer, middleware, web};
+use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer};
 use actix_web_httpauth::extractors::basic::BasicAuth;
 use actix_web_httpauth::middleware::HttpAuthentication;
 use anyhow::anyhow;

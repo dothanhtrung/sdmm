@@ -1,6 +1,5 @@
 use serde::Serialize;
 use sqlx::{Error, SqlitePool};
-use std::time::SystemTime;
 
 #[derive(Serialize)]
 #[repr(i64)]
@@ -10,7 +9,7 @@ pub enum JobState {
     Failed,
 }
 
-#[allow(unused)]
+#[derive(Serialize)]
 pub struct Job {
     pub id: i64,
     pub title: String,
@@ -35,13 +34,11 @@ pub async fn add_job(pool: &SqlitePool, title: &str, desc: &str) -> Result<i64, 
 }
 
 pub async fn update_job(pool: &SqlitePool, id: i64, desc: &str, state: JobState) -> Result<(), anyhow::Error> {
-    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs() as i64;
     let state = state as i64;
     sqlx::query!(
-        "UPDATE job SET desc = ?, state = ?, stopped_at = ? WHERE id = ?",
+        r#"UPDATE job SET desc = ?, state = ?, stopped_at = CURRENT_TIMESTAMP WHERE id = ?"#,
         desc,
         state,
-        now,
         id
     )
     .execute(pool)

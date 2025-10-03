@@ -41,3 +41,9 @@ default = []
 # Incremental actions like cargo check and cargo build can be significantly faster when using an optimized build
 [profile.dev.package.sqlx-macros]
 opt-level = 3
+
+[profile.dev]
+opt-level = 1 # Enable a small amount of optimization in debug mode
+
+[profile.dev.package."*"]
+opt-level = 3

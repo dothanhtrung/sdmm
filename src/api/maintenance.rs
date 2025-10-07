@@ -52,8 +52,9 @@ async fn scan_folder(
 
 #[get("remove_orphan")]
 async fn remove_orphan(db_pool: Data<DBPool>, broadcaster: Data<Broadcaster>) -> impl Responder {
-    broadcaster.warn("Removing orphan...").await;
+    broadcaster.warn("Removing orphaned item...").await;
     let deleted_items = db::item::clean(&db_pool.sqlite_pool).await.unwrap_or_default();
+    broadcaster.info(&format!("Removed {} orphaned items", deleted_items)).await;
 
     web::Json(format!(
         "{{

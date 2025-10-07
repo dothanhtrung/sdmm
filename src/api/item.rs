@@ -354,6 +354,12 @@ async fn delete(config: Data<ConfigData>, db_pool: Data<DBPool>, params: Query<D
                 error!("Failed to move file to trash directory: {}", e);
             }
         }
+
+        // Remove *.model.json file
+        let model_json = model_file.with_extension("model.json");
+        if let Err(e) = move_to_dir(&[model_json], &trash_dir).await {
+            error!("Failed to move to trash directory: {}", e);
+        }
     }
 
     web::Json("")

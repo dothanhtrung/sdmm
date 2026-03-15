@@ -103,8 +103,6 @@ impl Broadcaster {
     pub async fn new_client(&self) -> Sse<InfallibleStream<ReceiverStream<sse::Event>>> {
         let (tx, rx) = mpsc::channel(10);
 
-        tx.send(sse::Data::new("connected").into()).await.unwrap();
-
         self.inner.lock().clients.push(tx);
 
         Sse::from_infallible_receiver(rx)

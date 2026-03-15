@@ -106,16 +106,59 @@
         startTimer();
     }
 
-    const sse = new EventSource("/events");
+    let sse = null;
+    let reconnectTimer = null;
 
-    sse.onmessage = (event) => {
-        try {
-            const parsed = JSON.parse(event.data);
-            if (parsed.level && parsed.msg) {
-                showToast(parsed);
-            }
-        } catch (e) {
-            console.error("Invalid SSE JSON:", event.data);
+    function connectSSE() {
+        if (sse) {
+            console.warn("SSE already connected");
+            sse.close();
         }
-    };
+
+        sse = new EventSource("/events", {
+            withCredentials: false
+        });
+
+        sse.onopen = () => {
+            console.log("SSE connection opened");
+            clearTimeout(reconnectTimer);
+        };
+
+        sse.onmessage = (event) => {
+            try {
+                const parsed = JSON.parse(event.data);
+                if (parsed?.level && parsed?.msg) {
+                    showToast(parsed);
+                } else {
+                    console.debug("SSE message ignored (missing level/msg)", parsed);
+                }
+            } catch (err) {
+                console.error("SSE invalid JSON:", event.data, err);
+            }
+        };
+
+        sse.onerror = (err) => {
+            console.error("SSE error. Trying to reconnect...", err);
+
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(() => {
+                console.log("SSE attempting reconnect...");
+                connectSSE();
+            }, 3000);
+        };
+    }
+
+    function cleanupSSE() {
+        if (sse) {
+            sse.close();
+            sse = null;
+            console.log("SSE connection closed cleanly");
+        }
+        if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+        }
+    }
+
+    connectSSE();
+    window.addEventListener("beforeunload", cleanupSSE);
 </script>

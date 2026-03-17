@@ -24,3 +24,6 @@ linux:
     cd output/linux && tar cJvf sdmm_{{VERSION}}.linux.x86-64.tar.xz sdmm && mv sdmm_{{VERSION}}.linux.x86-64.tar.xz ..
 
 release: windows linux
+
+watch:
+    bacon run-long -- -- -c ./sdmm-config-sample.ron

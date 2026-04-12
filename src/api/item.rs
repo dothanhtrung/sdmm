@@ -228,7 +228,7 @@ async fn civitai_download(
     params: Query<CivitaiDownloadQuery>,
     broadcaster: Data<Broadcaster>,
 ) -> impl Responder {
-    let mut config = config_data.config.write().await.clone();
+    let mut config = config_data.config.write().await;
     let dest_dir = PathBuf::from(&params.dest);
 
     let path = dest_dir.join(&params.name);
@@ -268,6 +268,7 @@ async fn civitai_download(
         headers.insert(AUTHORIZATION, bearer);
     }
 
+    let config = config.clone();
     rt::spawn(async move {
         let id = add_job(
             &db_pool.sqlite_pool,

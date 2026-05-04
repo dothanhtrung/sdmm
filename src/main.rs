@@ -1,6 +1,4 @@
-//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
-//!
-//!
+
 //! TODO:
 //! * Replace preview image.
 //! * Create folder and move model

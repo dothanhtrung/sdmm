@@ -1,4 +1,4 @@
-//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 
 use crate::civitai::CivitaiFileMetadata;
 use serde::{Deserialize, Serialize};

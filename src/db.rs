@@ -1,4 +1,4 @@
-//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 
 pub mod item;
 pub mod tag;

@@ -1,4 +1,4 @@
-//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 
 use crate::api::{get_abs_path, CommonResponse, TRASH_DIR};
 use crate::civitai::{get_item_info, update_model_info};

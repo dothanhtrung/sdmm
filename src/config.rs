@@ -1,4 +1,4 @@
-//! Copyright (c) 2025 Trung Do <dothanhtrung@pm.me>.
+
 
 use ron::ser::{PrettyConfig, to_string_pretty};
 use serde::{Deserialize, Serialize};

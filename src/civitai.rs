@@ -1,13 +1,11 @@
-
-
 use crate::api::TRASH_DIR;
 use crate::config::Config;
 use actix_web_lab::__reexports::futures_util::StreamExt;
 use jwalk::{Parallelism, WalkDir};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use serde::Deserialize;
-use serde_json::{to_string_pretty, Value};
+use serde_json::{Value, to_string_pretty};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufReader, Read, Write};
@@ -33,6 +31,20 @@ pub struct CivitaiFileMetadata {
     pub format: String,
     pub fp: Option<String>,
     pub size: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+pub struct CivitaiEnums {
+    #[serde(rename = "ModelType", default)]
+    pub model_type: Vec<String>,
+    #[serde(rename = "ModelFileType", default)]
+    pub _model_file_type: Vec<String>,
+    #[serde(rename = "ActiveBaseModel", default)]
+    pub active_base_model: Vec<String>,
+    #[serde(rename = "BaseModel", default)]
+    pub _base_model: Vec<String>,
+    #[serde(rename = "BaseModelType", default)]
+    pub _base_model_type: Vec<String>,
 }
 
 pub async fn update_model_info(config: &Config) -> anyhow::Result<()> {

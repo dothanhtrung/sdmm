@@ -1,11 +1,10 @@
-
-
-use crate::api::SearchQuery;
 use crate::ConfigData;
+use crate::api::SearchQuery;
+use crate::civitai::CivitaiEnums;
 use actix_files::Files;
 use actix_web::rt::time::interval;
 use actix_web::web::Data;
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web};
 use actix_web_lab::extract::Query;
 use actix_web_lab::{
     sse::{self, Sse},
@@ -13,6 +12,8 @@ use actix_web_lab::{
 };
 use futures_util::future;
 use parking_lot::Mutex;
+use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
@@ -194,7 +195,29 @@ async fn maintenance(tmpl: Data<Tera>) -> impl Responder {
 async fn civitai(tmpl: Data<Tera>, config_data: Data<ConfigData>) -> impl Responder {
     let mut ctx = tera::Context::new();
     let config = config_data.config.read().await;
-    ctx.insert("config", &config.civitai);
+    let mut civitai_config = config.civitai.clone();
+
+    // Get baseModels and types list
+    if civitai_config.base_models.is_empty() || civitai_config.types.is_empty() {
+        let client = Client::new();
+        let mut headers = HeaderMap::new();
+        if let Ok(bearer) = HeaderValue::from_str(&format!("Bearer {}", config.civitai.api_key)) {
+            headers.insert(AUTHORIZATION, bearer);
+        }
+        let url = "https://civitai.com/api/v1/enums";
+        match client.get(url).headers(headers).send().await {
+            Ok(response) => match response.json::<CivitaiEnums>().await {
+                Ok(info) => {
+                    civitai_config.base_models = info.active_base_model.clone();
+                    civitai_config.types = info.model_type.clone();
+                }
+                Err(e) => error!("Failed to parse civitai enums: {}", e),
+            },
+            Err(e) => error!("Failed to fetch {}: {}", url, e),
+        }
+    }
+
+    ctx.insert("config", &civitai_config);
     match tmpl.render("civitai.html", &ctx) {
         Ok(template) => HttpResponse::Ok().content_type("text/html").body(template),
         Err(e) => HttpResponse::Ok()

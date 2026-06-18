@@ -2,7 +2,6 @@
 //! TODO:
 //! * Replace preview image.
 //! * Create folder and move model
-//! * Duplicate check
 
 #[cfg(target_os = "linux")]
 use tikv_jemallocator::Jemalloc;

@@ -1,8 +1,6 @@
-
-
 use indexmap::IndexSet;
-use sqlx::sqlite::SqliteQueryResult;
 use sqlx::SqlitePool;
+use sqlx::sqlite::SqliteQueryResult;
 
 #[derive(sqlx::FromRow, Eq, PartialEq, Hash)]
 pub struct Item {
@@ -98,45 +96,49 @@ pub async fn search(
     //TODO: Search in note too
     let mut items = IndexSet::new();
     let mut count = 0;
-    let mut exclude_name = String::new();
-
-    let duplicate_cond = if duplicate_only {
-        "AND blake3 IN (
-            SELECT blake3 FROM item
-            WHERE is_checked = true
-            GROUP BY blake3
-            HAVING COUNT(*) > 1
-        )"
-    } else {
-        ""
-    };
+    let limit_dup_count = if duplicate_only { 1 } else { 0 };
 
     if !tag_only {
-        let cond = format!(
-            "FROM item
+        let items_by_name = sqlx::query_as!(
+            Item,
+            r#"SELECT id,name, path, base_label, note
+            FROM item
             WHERE is_checked = true
-                AND (name COLLATE NOCASE LIKE '%' || '{}' || '%'
-                  OR model_name COLLATE NOCASE LIKE '%' || '{}' || '%')
-                {}",
-            search, search, &duplicate_cond,
-        );
-        let query = format!(
-            "SELECT id,name, path, base_label, note
-            {}
+                AND (name COLLATE NOCASE LIKE '%' || ? || '%'
+                    OR model_name COLLATE NOCASE LIKE '%' || ? || '%')
+                AND blake3 IN (
+                    SELECT blake3 FROM item
+                    WHERE is_checked = true
+                    GROUP BY blake3
+                    HAVING COUNT(*) > ?)
             ORDER BY updated_at DESC
-            LIMIT {} OFFSET {}",
-            &cond, limit, offset
-        );
-        let items_by_name = sqlx::query_as(&query).fetch_all(pool).await?;
+            LIMIT ? OFFSET ?"#,
+            search,
+            search,
+            limit_dup_count,
+            limit,
+            offset
+        )
+        .fetch_all(pool)
+        .await?;
 
-        let count_query = format!("SELECT count(id) {}", &cond);
-        let count_by_name: i64 = sqlx::query_scalar(&count_query).fetch_one(pool).await?;
-
-        exclude_name = format!(
-            "AND NOT (item.name COLLATE NOCASE LIKE '%{}%'
-                      OR item.model_name COLLATE NOCASE LIKE '%{}%')",
-            &search, &search
-        );
+        let count_by_name: i64 = sqlx::query_scalar!(
+            r#"SELECT count(id)
+            FROM item
+            WHERE is_checked = true
+                AND (name COLLATE NOCASE LIKE '%' || ? || '%'
+                    OR model_name COLLATE NOCASE LIKE '%' || ? || '%')
+                AND blake3 IN (
+                    SELECT blake3 FROM item
+                    WHERE is_checked = true
+                    GROUP BY blake3
+                    HAVING COUNT(*) > ?)"#,
+            search,
+            search,
+            limit_dup_count,
+        )
+        .fetch_one(pool)
+        .await?;
 
         items.extend(items_by_name);
         count += count_by_name;
@@ -147,32 +149,64 @@ pub async fn search(
         .map(|s| s.to_string().to_lowercase())
         .collect();
 
-    if !tags.is_empty() {
-        let condition = format!(
-            "FROM item
-          LEFT JOIN tag_item ON item.id = tag_item.item
-          LEFT JOIN tag ON tag.id = tag_item.tag
-          WHERE item.is_checked = true
-            AND tag.name IN ('{}')
-            {}
-            {}
-          GROUP BY item.id
-          HAVING COUNT(DISTINCT tag.id) = {}",
-            tags.join("','"),
-            &exclude_name,
-            &duplicate_cond,
-            tags.len()
-        );
-        let query = format!(
-            "SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label
-            {}
-            ORDER BY item.updated_at DESC LIMIT {} OFFSET {}",
-            condition, limit, offset
-        );
-        let search_by_tags: Vec<Item> = sqlx::query_as(&query).fetch_all(pool).await?;
+    // WORKAROUND: Do not exclude name match if tag_only
+    let search = if tag_only { "ikjsdfh3280urkjhfskjaeoiosd92304q31#!@&$^%@#&$*6" } else { search };
 
-        let count_query = format!("SELECT COUNT(*) FROM (SELECT item.id {})", condition);
-        let tags_count: i64 = sqlx::query_scalar(&count_query).fetch_one(pool).await?;
+    if !tags.is_empty() {
+        let search_by_tags = sqlx::query_as!(
+            Item,
+            r#"
+            SELECT item.id as id, item.name as name, item.note as note, item.path as path, item.base_label as base_label
+            FROM item
+            LEFT JOIN tag_item ON item.id = tag_item.item
+            LEFT JOIN tag ON tag.id = tag_item.tag
+            WHERE item.is_checked = true
+                AND tag.name IN (SELECT value FROM json_each(?))
+                AND NOT(item.name COLLATE NOCASE LIKE '%' || ? || '%'
+                        OR item.model_name COLLATE NOCASE LIKE '%' || ? || '%')
+                AND blake3 IN (
+                    SELECT blake3 FROM item
+                    WHERE is_checked = true
+                    GROUP BY blake3
+                    HAVING COUNT(*) > ?)
+            GROUP BY item.id
+            HAVING COUNT(DISTINCT tag.id) = ?
+            ORDER BY item.updated_at DESC LIMIT ? OFFSET ?
+            "#,
+            serde_json::json!(tags),
+            search,
+            search,
+            limit_dup_count,
+            tags.len() as i64,
+            limit,
+            offset
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let tags_count: i64 = sqlx::query_scalar!(
+            r#"SELECT COUNT(*) FROM (SELECT item.id FROM item
+                LEFT JOIN tag_item ON item.id = tag_item.item
+                LEFT JOIN tag ON tag.id = tag_item.tag
+                WHERE item.is_checked = true
+                    AND tag.name IN (SELECT value FROM json_each(?))
+                    AND NOT(item.name COLLATE NOCASE LIKE '%' || ? || '%'
+                            OR item.model_name COLLATE NOCASE LIKE '%' || ? || '%')
+                    AND blake3 IN (
+                        SELECT blake3 FROM item
+                        WHERE is_checked = true
+                        GROUP BY blake3
+                        HAVING COUNT(*) > ?)
+                GROUP BY item.id
+                HAVING COUNT(DISTINCT tag.id) = ?)"#,
+            serde_json::json!(tags),
+            search,
+            search,
+            limit_dup_count,
+            tags.len() as i64,
+        )
+        .fetch_one(pool)
+        .await?;
 
         count += tags_count;
         items.extend(search_by_tags);

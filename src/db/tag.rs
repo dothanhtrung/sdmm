@@ -1,5 +1,3 @@
-
-
 use crate::civitai::CivitaiFileMetadata;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -199,7 +197,7 @@ pub async fn update_item_note(pool: &SqlitePool, item: i64, note: &str) -> Resul
     Ok(())
 }
 
-pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<TagCount>, sqlx::Error> {
+pub async fn list_tags(pool: &SqlitePool, item_ids: &[i64]) -> Result<Vec<TagCount>, sqlx::Error> {
     if item_ids.is_empty() {
         sqlx::query_as!(
             TagCount,
@@ -211,23 +209,19 @@ pub async fn list_tags(pool: &SqlitePool, item_ids: HashSet<i64>) -> Result<Vec<
         .fetch_all(pool)
         .await
     } else {
-        let placeholders = vec!["?"; item_ids.len()].join(",");
-        let sql = format!(
-            "SELECT name as tag, count
-            FROM (SELECT tag_item.tag as tag_id, tag.name as name, COUNT(tag_item.tag) as count FROM tag
-                LEFT JOIN tag_item ON tag.id = tag_item.tag
-                LEFT JOIN item ON item.id = tag_item.item
-                WHERE item.is_checked = true
-                GROUP BY tag.name)
-            JOIN tag_item ON tag_item.tag = tag_id
-            WHERE tag_item.item IN ({placeholders})
-            GROUP BY tag ORDER BY count DESC
-            "
-        );
-        let mut query = sqlx::query_as::<_, TagCount>(&sql);
-        for id in item_ids {
-            query = query.bind(id);
-        }
-        query.fetch_all(pool).await
+        sqlx::query_as!(TagCount,
+            r#"SELECT name as "tag!", count as "count!"
+        FROM (SELECT tag_item.tag as tag_id, tag.name as name, COUNT(tag_item.tag) as count FROM tag
+            LEFT JOIN tag_item ON tag.id = tag_item.tag
+            LEFT JOIN item ON item.id = tag_item.item
+            WHERE item.is_checked = true
+            GROUP BY tag.name)
+        JOIN tag_item ON tag_item.tag = tag_id
+        WHERE tag_item.item IN (SELECT value FROM json_each(?))
+        GROUP BY tag ORDER BY count DESC"#,
+            serde_json::json!(item_ids)
+        )
+        .fetch_all(pool)
+        .await
     }
 }

@@ -8,7 +8,6 @@ use actix_web::web::Data;
 use actix_web::{get, post, web, Responder};
 use actix_web_lab::extract::Query;
 use serde::Serialize;
-use std::collections::HashSet;
 use tracing::error;
 
 pub fn scope(cfg: &mut web::ServiceConfig) {
@@ -29,7 +28,7 @@ struct TagResponse {
 
 #[get("")]
 async fn get_all(db_pool: Data<DBPool>) -> impl Responder {
-    let get_all = db::tag::list_tags(&db_pool.sqlite_pool, HashSet::new())
+    let get_all = db::tag::list_tags(&db_pool.sqlite_pool, &[])
         .await
         .unwrap_or_else(|e| {
             error!("Failed to list tags: {e}");

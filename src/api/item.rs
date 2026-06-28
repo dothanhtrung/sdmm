@@ -1,17 +1,15 @@
-
-
-use crate::api::{get_abs_path, CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR};
-use crate::civitai::{download_file, file_type, get_extension_from_url, get_item_info, FileType, PREVIEW_EXT};
-use crate::db::job::{add_job, update_job, JobState};
-use crate::db::tag::{update_item_note, update_tag_item, TagCount};
+use crate::api::{CommonResponse, DeleteRequest, SearchQuery, TRASH_DIR, get_abs_path};
+use crate::civitai::{FileType, PREVIEW_EXT, download_file, file_type, get_extension_from_url, get_item_info};
 use crate::db::DBPool;
+use crate::db::job::{JobState, add_job, update_job};
+use crate::db::tag::{TagCount, update_item_note, update_tag_item};
 use crate::ui::Broadcaster;
-use crate::{api, db, ConfigData};
+use crate::{ConfigData, api, db};
 use actix_web::web::Data;
-use actix_web::{get, post, rt, web, Responder};
+use actix_web::{Responder, get, post, rt, web};
 use actix_web_lab::extract::Query;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::max;
@@ -103,7 +101,16 @@ async fn get_items(
     } else {
         let tag_only = query_params.tag_only.unwrap_or(false);
         let duplicate_only = query_params.duplicate_only.unwrap_or(false);
-        match db::item::search(&db_pool.sqlite_pool, &query_params.search, limit, offset, tag_only, duplicate_only).await {
+        match db::item::search(
+            &db_pool.sqlite_pool,
+            &query_params.search,
+            limit,
+            offset,
+            tag_only,
+            duplicate_only,
+        )
+        .await
+        {
             Ok((i, t)) => (i, t),
             Err(e) => {
                 err = Some(format!("{}", e));
@@ -161,7 +168,8 @@ async fn get_items(
     let tags = if item_ids.is_empty() {
         Vec::new()
     } else {
-        db::tag::list_tags(&db_pool.sqlite_pool, item_ids)
+        let ids_array: Vec<i64> = item_ids.into_iter().collect();
+        db::tag::list_tags(&db_pool.sqlite_pool, &ids_array)
             .await
             .unwrap_or_else(|e| {
                 error!("Failed to list tags: {e}");
@@ -171,7 +179,7 @@ async fn get_items(
 
     web::Json(SearchResponse {
         items: ret,
-        total_page: total/limit + 1,
+        total_page: total / limit + 1,
         tags,
         err,
     })

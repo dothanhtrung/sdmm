@@ -6,9 +6,9 @@ description = "Manage your SD models"
 
 [dependencies]
 anyhow = "1.0"
-actix-web = { version = "4.13" }
+actix-web = { version = "4.14" }
 actix-files = "0.6"
-actix-multipart = { version = "0.7" }
+actix-multipart = { version = "0.8" }
 actix-cors = "0.7"
 actix-web-lab = "0.26"
 actix-web-httpauth = "0.8"
@@ -21,7 +21,7 @@ tokio-stream = {version = "0.1"}
 sqlx = { version = "0.9", features = ["runtime-tokio", "tls-rustls-ring-native-roots", "sqlite", "migrate"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tera = "1.20"
+tera = {version = "2.0", features = ["glob_fs"]}
 jwalk = "0.8"
 blake3 = "1.8"
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "stream", "rustls"] }

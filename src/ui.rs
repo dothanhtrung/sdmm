@@ -23,7 +23,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use tracing::{error, info, warn};
 
 pub fn scope_config(cfg: &mut web::ServiceConfig) {
-    let tera = Tera::new("res/html/**/*").unwrap();
+    let mut tera = Tera::new();
+    let _ = tera.load_from_glob("res/html/**/*");
 
     cfg.app_data(Data::new(tera))
         .service(index)
